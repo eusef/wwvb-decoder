@@ -30,10 +30,23 @@ Each frame is 60 symbols (one per second). The decoder extracts the amplitude en
 
 ## Prerequisites
 
-- **SDRConnect** running with WebSocket API enabled (default port 5454)
 - **SDRplay RSP hardware** (RSPdx recommended for VLF with Hi-Z input)
 - **VLF antenna** - long wire, loop tuned to 60 kHz, or whip
 - **Python 3.10+**
+
+### SDRConnect Setup
+
+[SDRConnect](https://www.sdrplay.com/sdrconnect/) must be running before starting the decoder. The decoder communicates with SDRConnect over its WebSocket API, which is disabled by default.
+
+To enable it:
+
+1. Open SDRConnect
+2. Go to **Settings**
+3. Turn on the **WebSocket** switch
+4. Note the port number (default: 5454)
+5. Leave SDRConnect running while using the decoder
+
+SDRConnect headless mode is also supported for remote or server-based setups. Run SDRConnect headless on the target machine and point the decoder at it with `--host`.
 
 ## Installation
 
