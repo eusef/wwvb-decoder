@@ -88,7 +88,7 @@ typically 2-4 hours after local sunset.
 ---
 
 [bold blue]Links[/]
-  Project:  github.com/your-user/wwvb-decode
+  Project:  github.com/eusef/wwvb-decoder
   NIST:     nist.gov/pml/time-and-frequency-division/
             time-services/wwvb-60-khz
 
