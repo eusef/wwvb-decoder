@@ -17,6 +17,8 @@ class Config:
     plain: bool = False
     debug: bool = False
     antenna: str = "Hi-Z"
+    if_gain: int | None = None     # IF gain reduction (0-59 for RSPdx)
+    rf_gain: int | None = None     # LNA state / RF gain level
 
     @property
     def ws_url(self) -> str:
@@ -81,6 +83,22 @@ def parse_args(argv: list[str] | None = None) -> Config:
         default="Hi-Z",
         help="Antenna port selection (default: Hi-Z for VLF)",
     )
+    parser.add_argument(
+        "--if-gain",
+        type=int,
+        default=None,
+        metavar="N",
+        help="IF gain reduction (0-59 dB for RSPdx). Lower = more gain. "
+             "Tip: set to 0 for WWVB to avoid overload.",
+    )
+    parser.add_argument(
+        "--rf-gain",
+        type=int,
+        default=None,
+        metavar="N",
+        help="LNA state / RF gain level. Higher = more gain. "
+             "For RSPdx: 0 (min) to 9 (max).",
+    )
 
     args = parser.parse_args(argv)
 
@@ -98,4 +116,6 @@ def parse_args(argv: list[str] | None = None) -> Config:
         plain=args.plain,
         debug=args.debug,
         antenna=args.antenna,
+        if_gain=args.if_gain,
+        rf_gain=args.rf_gain,
     )

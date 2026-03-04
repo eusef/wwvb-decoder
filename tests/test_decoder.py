@@ -57,25 +57,25 @@ class TestPulseClassification:
         pulses = decoder.process(envelope, 1000.0)
         assert len(pulses) == 0
 
-    def test_boundary_350ms(self, decoder):
-        """350ms is the boundary between 0 and 1. At exactly 350, should be 1."""
-        envelope = _make_pulse(1000.0, 349)
+    def test_boundary_330ms(self, decoder):
+        """330ms is the boundary between 0 and 1."""
+        envelope = _make_pulse(1000.0, 329)
         pulses = decoder.process(envelope, 1000.0)
         assert pulses[0].symbol == "0"
 
         decoder2 = PulseDecoder(threshold=0.5)
-        envelope2 = _make_pulse(1000.0, 351)
+        envelope2 = _make_pulse(1000.0, 331)
         pulses2 = decoder2.process(envelope2, 1000.0)
         assert pulses2[0].symbol == "1"
 
-    def test_boundary_650ms(self, decoder):
-        """650ms is the boundary between 1 and M."""
-        envelope = _make_pulse(1000.0, 649)
+    def test_boundary_620ms(self, decoder):
+        """620ms is the boundary between 1 and M."""
+        envelope = _make_pulse(1000.0, 619)
         pulses = decoder.process(envelope, 1000.0)
         assert pulses[0].symbol == "1"
 
         decoder2 = PulseDecoder(threshold=0.5)
-        envelope2 = _make_pulse(1000.0, 651)
+        envelope2 = _make_pulse(1000.0, 621)
         pulses2 = decoder2.process(envelope2, 1000.0)
         assert pulses2[0].symbol == "M"
 

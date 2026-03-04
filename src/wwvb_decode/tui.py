@@ -1,6 +1,7 @@
 """Rich TUI display for WWVB decoder."""
 
 import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rich.console import Console, Group
@@ -13,6 +14,21 @@ from rich.text import Text
 
 if TYPE_CHECKING:
     from .state import WWVBApp
+
+# Minimum terminal width to show the two-column layout with tips panel.
+# Below this, we fall back to single-column (decoder only).
+MIN_WIDTH_FOR_TIPS = 120
+
+
+def _load_tips_pages() -> list[str]:
+    """Load tips content from tips.txt, split into pages by '---' lines."""
+    tips_path = Path(__file__).parent / "tips.txt"
+    if not tips_path.exists():
+        return ["[dim]Tips file not found.\nExpected at src/wwvb_decode/tips.txt[/]"]
+
+    raw = tips_path.read_text(encoding="utf-8")
+    pages = [p.strip() for p in raw.split("\n---\n") if p.strip()]
+    return pages if pages else ["[dim]Tips file is empty.[/]"]
 
 # Big ASCII digit font (5 wide x 7 tall)
 DIGITS = {
@@ -191,15 +207,17 @@ def _get_bit_color(pos: int) -> str:
 
 
 class TUIDisplay:
-    """Rich Live TUI with 6 panels for WWVB decoder status."""
+    """Rich Live TUI with responsive two-column layout for WWVB decoder."""
 
     def __init__(self):
         self._console = Console()
         self._live = Live(
             console=self._console,
             refresh_per_second=2,
-            screen=False,
+            screen=True,  # Use alternate screen buffer for clean refresh
         )
+        self._tips_pages = _load_tips_pages()
+        self._tips_page_index = 0
 
     def start(self) -> None:
         self._live.start()
@@ -210,6 +228,14 @@ class TUIDisplay:
         except Exception:
             pass
 
+    def tips_next_page(self) -> None:
+        """Advance to the next tips page (wraps around)."""
+        self._tips_page_index = (self._tips_page_index + 1) % len(self._tips_pages)
+
+    def tips_prev_page(self) -> None:
+        """Go to the previous tips page (wraps around)."""
+        self._tips_page_index = (self._tips_page_index - 1) % len(self._tips_pages)
+
     def update(self, state: "WWVBApp") -> None:
         """Rebuild and render the full TUI layout."""
         try:
@@ -218,16 +244,53 @@ class TUIDisplay:
         except Exception:
             pass  # Don't crash on display errors
 
-    def _build_layout(self, state: "WWVBApp") -> Group:
-        """Build the stacked panel layout."""
-        panels = []
-        panels.append(self._render_header(state))
-        panels.append(self._render_signal(state))
-        panels.append(self._render_frame(state))
-        panels.append(self._render_time(state))
-        panels.append(self._render_stats(state))
-        panels.append(self._render_log(state))
-        return Group(*panels)
+    def _render_tips(self) -> Panel:
+        """Render the current tips page with navigation hint and dots."""
+        page_markup = self._tips_pages[self._tips_page_index]
+        page_text = Text.from_markup(page_markup)
+
+        total = len(self._tips_pages)
+        current = self._tips_page_index + 1
+
+        # Page indicator dots
+        dots = Text()
+        for i in range(total):
+            if i == self._tips_page_index:
+                dots.append(" \u25cf ", style="cyan")  # filled circle
+            else:
+                dots.append(" \u25cb ", style="dim")   # empty circle
+
+        content = Group(page_text, Text(""), dots)
+
+        return Panel(
+            content,
+            title=f"Help & Tips [{current}/{total}]",
+            subtitle="\u2190 \u2192 arrow keys to page",
+            border_style="dim cyan",
+        )
+
+    def _build_layout(self, state: "WWVBApp") -> Layout | Group:
+        """Build layout. Two columns (60/40) if wide enough, else single."""
+        left_panels = Group(
+            self._render_header(state),
+            self._render_signal(state),
+            self._render_frame(state),
+            self._render_time(state),
+            self._render_stats(state),
+            self._render_log(state),
+        )
+
+        # Responsive: only show tips column if terminal is wide enough
+        term_width = self._console.size.width
+        if term_width < MIN_WIDTH_FOR_TIPS:
+            return left_panels
+
+        layout = Layout()
+        layout.split_row(
+            Layout(left_panels, name="main", ratio=3),
+            Layout(self._render_tips(), name="tips", ratio=2),
+        )
+        return layout
 
     def _render_header(self, state: "WWVBApp") -> Panel:
         """Panel 1: Connection status."""
@@ -268,6 +331,30 @@ class TUIDisplay:
         """Panel 2: Signal quality."""
         lines = []
 
+        sdr_overload = state.sdr_overload
+        audio_clipping = state.envelope_detector.is_overloaded
+        peak_pct = state.envelope_detector.peak_level_pct
+
+        # SDR ADC Overload: red alarm (matches SDRConnect's own indicator)
+        if sdr_overload:
+            warn = Text()
+            warn.append("  \u26a0 OVERLOAD ", style="bold white on red")
+            warn.append("  ADC overload reported by SDR hardware", style="bold red")
+            warn.append("  - Reduce RF gain or increase IF gain reduction", style="red")
+            lines.append(warn)
+
+        # Audio levels high: yellow advisory (demod output near max, not ADC issue)
+        if audio_clipping and not sdr_overload:
+            info = Text()
+            clip_pct = state.envelope_detector.clip_percentage
+            info.append("  \u26a0 LEVELS HIGH ", style="bold black on yellow")
+            info.append(
+                f"  Audio output clipping: {clip_pct:.1f}% (peak {peak_pct:.0f}%)",
+                style="yellow",
+            )
+            info.append("  - May affect decoding if severe", style="dim yellow")
+            lines.append(info)
+
         # Power and SNR
         power_str = f"{state.signal_power:.1f} dBm" if state.signal_power else "---"
         snr_str = f"{state.signal_snr:.1f} dB" if state.signal_snr else "---"
@@ -299,6 +386,26 @@ class TUIDisplay:
         power_line.append(f"  SNR {snr_str}", style=snr_color)
         lines.append(power_line)
 
+        # Peak audio level meter
+        peak_line = Text()
+        peak_line.append("  Audio   ")
+        # Color-coded peak level
+        if peak_pct > 95:
+            peak_style = "bold red"
+        elif peak_pct > 80:
+            peak_style = "yellow"
+        else:
+            peak_style = "green"
+        # Visual meter bar
+        meter_width = 20
+        meter_filled = int(min(1.0, peak_pct / 100.0) * meter_width)
+        peak_line.append("\u2588" * meter_filled, style=peak_style)
+        peak_line.append("\u2591" * (meter_width - meter_filled), style="dim")
+        peak_line.append(f"  {peak_pct:.0f}%", style=peak_style)
+        if peak_pct > 95:
+            peak_line.append(" CLIP", style="bold red")
+        lines.append(peak_line)
+
         # Quality sparkline (per-frame SNR history)
         quality_line = Text()
         quality_line.append("  Quality ")
@@ -323,7 +430,14 @@ class TUIDisplay:
         lines.append(envelope_line)
 
         content = Group(*lines)
-        return Panel(content, title="Signal", border_style="bright_blue")
+        # Only red border for actual SDR overload; yellow for audio clipping
+        if sdr_overload:
+            border = "bold red"
+        elif audio_clipping:
+            border = "yellow"
+        else:
+            border = "bright_blue"
+        return Panel(content, title="Signal", border_style=border)
 
     def _render_frame(self, state: "WWVBApp") -> Panel:
         """Panel 3: Current frame progress."""
@@ -481,9 +595,9 @@ class TUIDisplay:
         return Panel(table, title="Statistics", border_style="bright_blue")
 
     def _render_log(self, state: "WWVBApp") -> Panel:
-        """Panel 6: Activity log."""
+        """Panel 6: Activity log (newest first)."""
         lines = []
-        for entry in state.log_entries[-10:]:
+        for entry in reversed(state.log_entries[-10:]):
             lines.append(Text(entry))
 
         if not lines:

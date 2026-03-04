@@ -1,0 +1,97 @@
+[bold cyan]WWVB Time Station[/]
+[dim]60 kHz  |  Fort Collins, CO  |  Operated by NIST[/]
+
+[bold]About WWVB[/]
+WWVB is a longwave time signal broadcast by NIST from
+Fort Collins, Colorado on 60 kHz. It transmits UTC time
+using pulse-width modulation:
+
+  200ms pulse = binary 0
+  500ms pulse = binary 1
+  800ms pulse = marker (M)
+
+Each frame is 60 seconds (60 symbols). Frame sync uses
+two consecutive marker pulses (positions 59 + 0).
+
+[bold yellow]Best Reception Times[/]
+  Night:      [green]Excellent[/] (sunset to sunrise)
+  Dawn/Dusk:  [yellow]Good[/] (transition periods)
+  Day:        [red]Poor[/] (high noise floor)
+
+Signal propagates via groundwave (short range) and
+skywave (long range, night only). Best results are
+typically 2-4 hours after local sunset.
+
+---
+
+[bold yellow]SDRConnect Tuning[/]
+  Frequency:  60,000 Hz
+  Mode:       AM
+  Bandwidth:  100 Hz (narrow)
+  AGC:        OFF (critical!)
+  Squelch:    OFF
+
+[bold yellow]Gain Setup (RSPdx)[/]
+  1. Set IF Gain to minimum (0 dB)
+  2. Slowly increase RF Gain
+  3. Watch for overload indicator
+  4. Back off RF Gain slightly
+  5. Goal: maximize signal without clipping the ADC
+
+  Use [bold]--if-gain[/] and [bold]--rf-gain[/] CLI flags for
+  headless or automated setup.
+
+---
+
+[bold yellow]Antenna Recommendations[/]
+  Best:  Long wire / EFRW (Hi-Z input)
+  Good:  Loop antenna (tuned to 60 kHz)
+  Fair:  Whip / random wire
+
+  Use Antenna Port A (Hi-Z input) on the RSPdx for
+  best LF/VLF sensitivity.
+
+  Orient loop antennas broadside toward Fort Collins, CO.
+
+[bold yellow]CLI Options[/]
+  --host / --port    SDRConnect WebSocket address
+  --no-tune          Skip radio configuration
+  --antenna          Antenna port (default: Hi-Z)
+  --if-gain          IF gain reduction (0 = minimum)
+  --rf-gain          LNA state / RF gain level
+  --threshold        Pulse detection threshold (0.0-1.0)
+  --min-frames       Frames needed for confirmation
+  --plain            Plain text output (no TUI)
+  --debug            Verbose debug logging
+
+---
+
+[bold yellow]Troubleshooting[/]
+  [bold]No pulses detected?[/]
+    - Check antenna connection
+    - Verify 60 kHz AM mode in SDRConnect
+    - Try at night for much stronger signal
+    - Ensure AGC is OFF
+
+  [bold]Sync not locking?[/]
+    - Weak signal (need SNR > ~3 dB)
+    - Increase RF gain carefully
+    - Wait for nighttime propagation
+    - Check envelope trace for clear on/off pattern
+
+  [bold]Frame errors?[/]
+    - Normal at low SNR, especially daytime
+    - Multiple consecutive matching frames are
+      needed before time is confirmed
+    - Patience: each frame takes 60 seconds
+
+---
+
+[bold blue]Links[/]
+  Project:  github.com/your-user/wwvb-decode
+  NIST:     nist.gov/pml/time-and-frequency-division/
+            time-services/wwvb-60-khz
+
+[dim]Edit this file to customize tips content:[/]
+[dim]  src/wwvb_decode/tips.txt[/]
+[dim]Pages are separated by --- lines on their own.[/]

@@ -5,16 +5,9 @@ import json
 import logging
 import struct
 from collections.abc import Callable
-from typing import Any
 
 import numpy as np
-
-try:
-    import websockets
-    from websockets.asyncio.client import connect as ws_connect
-except ImportError:
-    import websockets
-    ws_connect = None
+import websockets
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +22,9 @@ class SDRConnectClient:
 
     Handles JSON property get/set and dispatches binary audio/IQ streams
     to registered callbacks.
+
+    IMPORTANT: The receive loop (run()) must be running concurrently for
+    get_property() to work, since responses arrive as WebSocket messages.
     """
 
     def __init__(self, host: str, port: int):
@@ -42,6 +38,9 @@ class SDRConnectClient:
         self._pending_gets: dict[str, asyncio.Future] = {}
         self._max_retries = 5
         self._connected = asyncio.Event()
+        # Overload detection from SDRConnect property_changed events
+        self.overload_flag = False
+        self._overload_callbacks: list[Callable[[bool], None]] = []
 
     async def connect(self) -> None:
         """Connect to SDRConnect WebSocket with retry logic."""
@@ -52,8 +51,9 @@ class SDRConnectClient:
                 self._ws = await websockets.connect(
                     self.url,
                     max_size=2**22,  # 4MB for large audio chunks
-                    ping_interval=20,
-                    ping_timeout=10,
+                    ping_interval=30,
+                    ping_timeout=20,
+                    close_timeout=5,
                 )
                 self._connected.set()
                 logger.info(f"Connected to {self.url}")
@@ -71,29 +71,48 @@ class SDRConnectClient:
     async def disconnect(self) -> None:
         """Disable streams and close connection cleanly."""
         self._running = False
+        self._connected.clear()
         if self._ws:
             try:
-                await self._send_stream_enable("audio_stream_enable", False)
-                await self._send_stream_enable("iq_stream_enable", False)
+                await asyncio.wait_for(
+                    self._send_stream_enable("audio_stream_enable", False),
+                    timeout=2.0,
+                )
             except Exception:
                 pass
             try:
-                await self._ws.close()
+                await asyncio.wait_for(self._ws.close(), timeout=3.0)
             except Exception:
                 pass
             self._ws = None
-        self._connected.clear()
+
+    async def _safe_send(self, msg: str) -> bool:
+        """Send a message, returning False if the connection is closed."""
+        if not self._ws:
+            return False
+        try:
+            await self._ws.send(msg)
+            return True
+        except (websockets.exceptions.ConnectionClosed, RuntimeError) as e:
+            logger.debug(f"Send failed (connection closed): {e}")
+            return False
 
     async def get_property(self, name: str, timeout: float = 5.0) -> str | None:
-        """Send get_property request and wait for response."""
+        """Send get_property request and wait for response.
+
+        NOTE: The receive loop (run()) must be running concurrently.
+        """
         if not self._ws:
             return None
 
-        future = asyncio.get_event_loop().create_future()
+        loop = asyncio.get_running_loop()
+        future = loop.create_future()
         self._pending_gets[name] = future
 
         msg = json.dumps({"event_type": "get_property", "property": name})
-        await self._ws.send(msg)
+        if not await self._safe_send(msg):
+            self._pending_gets.pop(name, None)
+            return None
 
         try:
             value = await asyncio.wait_for(future, timeout=timeout)
@@ -105,26 +124,22 @@ class SDRConnectClient:
 
     async def set_property(self, name: str, value: str) -> None:
         """Send set_property (fire-and-forget)."""
-        if not self._ws:
-            return
         msg = json.dumps({
             "event_type": "set_property",
             "property": name,
             "value": str(value),
         })
-        await self._ws.send(msg)
+        await self._safe_send(msg)
         logger.debug(f"Set {name} = {value}")
 
     async def _send_stream_enable(self, event_type: str, enable: bool) -> None:
         """Send stream enable/disable command."""
-        if not self._ws:
-            return
         msg = json.dumps({
             "event_type": event_type,
             "property": "",
             "value": "true" if enable else "false",
         })
-        await self._ws.send(msg)
+        await self._safe_send(msg)
 
     async def enable_audio_stream(self) -> None:
         await self._send_stream_enable("audio_stream_enable", True)
@@ -154,8 +169,15 @@ class SDRConnectClient:
         """Register callback for IQ data (int16 IQ interleaved)."""
         self._iq_callbacks.append(callback)
 
+    def on_overload(self, callback: Callable[[bool], None]) -> None:
+        """Register callback for overload state changes from SDRConnect."""
+        self._overload_callbacks.append(callback)
+
     async def run(self) -> None:
-        """Main receive loop. Dispatches text and binary messages."""
+        """Main receive loop. Dispatches text and binary messages.
+
+        Must be running for get_property() responses to be received.
+        """
         self._running = True
         while self._running:
             try:
@@ -169,8 +191,8 @@ class SDRConnectClient:
                         self._handle_text(message)
                     elif isinstance(message, bytes):
                         self._handle_binary(message)
-            except websockets.exceptions.ConnectionClosed:
-                logger.warning("WebSocket connection closed")
+            except websockets.exceptions.ConnectionClosed as e:
+                logger.warning(f"WebSocket connection closed: {e}")
                 self._connected.clear()
                 if self._running:
                     try:
@@ -179,6 +201,8 @@ class SDRConnectClient:
                         logger.error("Reconnection failed. Exiting.")
                         self._running = False
                         break
+            except asyncio.CancelledError:
+                break
             except Exception as e:
                 logger.error(f"Error in receive loop: {e}")
                 if self._running:
@@ -201,6 +225,18 @@ class SDRConnectClient:
             future = self._pending_gets.pop(prop, None)
             if future and not future.done():
                 future.set_result(value)
+
+            # Track overload property (pushed by SDRConnect when ADC overloads)
+            if prop == "overload":
+                new_overload = value.lower() == "true"
+                if new_overload != self.overload_flag:
+                    self.overload_flag = new_overload
+                    for cb in self._overload_callbacks:
+                        try:
+                            cb(new_overload)
+                        except Exception:
+                            pass
+
             logger.debug(f"Property {prop} = {value}")
 
     def _handle_binary(self, data: bytes) -> None:
@@ -231,15 +267,27 @@ class SDRConnectClient:
     def is_connected(self) -> bool:
         return self._ws is not None and self._connected.is_set()
 
-    async def configure_wwvb(self, antenna: str = "Hi-Z") -> None:
+    async def configure_wwvb(
+        self,
+        antenna: str = "Hi-Z",
+        if_gain: int | None = None,
+        rf_gain: int | None = None,
+    ) -> dict[str, str]:
         """Configure SDRConnect for WWVB 60 kHz reception.
 
-        Performs the full startup sequence from the architecture spec.
+        NOTE: The receive loop must be running concurrently so that
+        get_property responses are dispatched.
+
+        Returns:
+            Dict of verified property values.
         """
+        results = {}
+
         # Check if we can control
         can_control = await self.get_property("can_control")
         if can_control == "false":
             logger.warning("Another client may have control. Tune commands may be ignored.")
+        results["can_control"] = can_control or "unknown"
 
         # Check if device is started
         started = await self.get_property("started")
@@ -247,15 +295,11 @@ class SDRConnectClient:
             await self.enable_device_stream()
             await asyncio.sleep(0.5)
 
-        # Set tuning
+        # Set tuning - fire all set_property calls quickly (no response needed)
         await self.set_property("device_center_frequency", "60000")
-        await asyncio.sleep(0.1)
         await self.set_property("device_vfo_frequency", "60000")
-        await asyncio.sleep(0.1)
         await self.set_property("demodulator", "AM")
-        await asyncio.sleep(0.1)
         await self.set_property("filter_bandwidth", "100")
-        await asyncio.sleep(0.1)
 
         # Disable processing that would distort pulses
         await self.set_property("squelch_enable", "false")
@@ -264,13 +308,24 @@ class SDRConnectClient:
         await self.set_property("audio_filter", "false")
         await self.set_property("audio_limiters", "false")
         await self.set_property("am_lowcut_frequency", "0")
-        await asyncio.sleep(0.1)
 
         # Set antenna
         await self.set_property("antenna_select", antenna)
-        await asyncio.sleep(0.2)
 
-        # Verify critical settings
+        # Set gain if specified
+        if if_gain is not None:
+            await self.set_property("device_if_gain_reduction", str(if_gain))
+            logger.info(f"IF gain reduction set to {if_gain}")
+            results["if_gain"] = str(if_gain)
+
+        if rf_gain is not None:
+            await self.set_property("lna_state", str(rf_gain))
+            logger.info(f"LNA state (RF gain) set to {rf_gain}")
+            results["rf_gain"] = str(rf_gain)
+
+        # Brief pause for settings to take effect, then verify
+        await asyncio.sleep(0.5)
+
         verify_props = [
             "device_center_frequency",
             "device_vfo_frequency",
@@ -278,5 +333,13 @@ class SDRConnectClient:
             "filter_bandwidth",
         ]
         for prop in verify_props:
-            val = await self.get_property(prop)
+            val = await self.get_property(prop, timeout=3.0)
+            results[prop] = val or "unknown"
             logger.info(f"Verified {prop} = {val}")
+
+        # NOTE: The 'overload' property is not readable via get_property on
+        # most SDR hardware (including RSPdx). Overload state is detected via
+        # push events (property_changed) in _handle_text() instead.
+        results["overload_monitoring"] = "push events only"
+
+        return results

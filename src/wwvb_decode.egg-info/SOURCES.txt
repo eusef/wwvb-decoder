@@ -8,6 +8,7 @@ src/wwvb_decode/frame.py
 src/wwvb_decode/plain.py
 src/wwvb_decode/sdrconnect.py
 src/wwvb_decode/state.py
+src/wwvb_decode/tips.txt
 src/wwvb_decode/tui.py
 src/wwvb_decode.egg-info/PKG-INFO
 src/wwvb_decode.egg-info/SOURCES.txt

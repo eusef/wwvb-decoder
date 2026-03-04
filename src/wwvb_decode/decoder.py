@@ -36,11 +36,15 @@ class PulseDecoder:
         self._sample_count = 0
 
         # Pulse width classification boundaries (ms)
-        self._min_pulse_ms = 80  # Reject shorter than this
-        self._max_pulse_ms = 1000  # Reject longer than this
-        self._zero_max_ms = 350
-        self._one_max_ms = 650
-        self._marker_max_ms = 900
+        # Widened from spec values to handle noisy/weak signals where
+        # envelope edges are detected early, shortening apparent pulse widths.
+        # Theoretical: 0=200ms, 1=500ms, M=800ms
+        # Observed weak signal: 0~167ms, 1~450ms, M~732ms
+        self._min_pulse_ms = 60   # Reject shorter than this
+        self._max_pulse_ms = 1100  # Reject longer than this
+        self._zero_max_ms = 330   # 0: ~100-330ms (was 350)
+        self._one_max_ms = 620    # 1: ~330-620ms (was 650)
+        self._marker_max_ms = 950 # M: ~620-950ms (was 900)
 
         # Running pulse width stats
         self._pulse_counts: dict[str, int] = {"0": 0, "1": 0, "M": 0, "?": 0}
