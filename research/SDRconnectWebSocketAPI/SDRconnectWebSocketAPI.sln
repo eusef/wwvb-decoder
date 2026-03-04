@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36616.10
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDRconnectWebSocketAPI.MinimalExample", "SDRconnectWebSocketAPI.MinimalExample\SDRconnectWebSocketAPI.MinimalExample.csproj", "{672FEBE8-3719-41E7-9204-53E7492B2538}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDRconnectWebSocketAPI.Client", "SDRconnectWebSocketAPI.Client\SDRconnectWebSocketAPI.Client.csproj", "{AEF42186-F9CC-4FD7-801B-D22CEA0E24C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDRconnectWebSocketAPI.AudioPlayer", "SDRconnectWebSocketAPI.AudioPlayer\SDRconnectWebSocketAPI.AudioPlayer.csproj", "{F1338971-87E5-4DB5-A7D4-2697706A6A43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDRconnectWebSocketAPI.RawIqWriter", "SDRconnectWebSocketAPI.RawIqWriter\SDRconnectWebSocketAPI.RawIqWriter.csproj", "{4DEB62D5-E320-46C4-8ABC-70572A9EDAC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDRconnectWebSocketAPI.SDRconnectCtl", "SDRconnectWebSocketAPI.SDRconnectCtl\SDRconnectWebSocketAPI.SDRconnectCtl.csproj", "{1F61D03A-1F67-4685-9F5B-7BC6B3525404}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{672FEBE8-3719-41E7-9204-53E7492B2538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{672FEBE8-3719-41E7-9204-53E7492B2538}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{672FEBE8-3719-41E7-9204-53E7492B2538}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{672FEBE8-3719-41E7-9204-53E7492B2538}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEF42186-F9CC-4FD7-801B-D22CEA0E24C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEF42186-F9CC-4FD7-801B-D22CEA0E24C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEF42186-F9CC-4FD7-801B-D22CEA0E24C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEF42186-F9CC-4FD7-801B-D22CEA0E24C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1338971-87E5-4DB5-A7D4-2697706A6A43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1338971-87E5-4DB5-A7D4-2697706A6A43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1338971-87E5-4DB5-A7D4-2697706A6A43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1338971-87E5-4DB5-A7D4-2697706A6A43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DEB62D5-E320-46C4-8ABC-70572A9EDAC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DEB62D5-E320-46C4-8ABC-70572A9EDAC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DEB62D5-E320-46C4-8ABC-70572A9EDAC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DEB62D5-E320-46C4-8ABC-70572A9EDAC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F61D03A-1F67-4685-9F5B-7BC6B3525404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F61D03A-1F67-4685-9F5B-7BC6B3525404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F61D03A-1F67-4685-9F5B-7BC6B3525404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F61D03A-1F67-4685-9F5B-7BC6B3525404}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C74401CC-3907-4B85-8DBB-E1F0B400D8F7}
+	EndGlobalSection
+EndGlobal

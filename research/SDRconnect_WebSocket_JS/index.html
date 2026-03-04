@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="client.js" defer></script>
+		<link rel="stylesheet" href="client.css" />
+		<title>SDRconnect WebSocket Test</title>
+	</head>
+	<body>
+		<h2>SDRconnect WebSocket Test</h2>
+		
+		
+		<p>
+		<label for="demod_mode">Demodulator</label>
+		<select name="demod_mode" id="demod_mode">
+
+			<option value="AM">AM</option>
+			<option value="USB">USB</option>
+			<option value="LSB">LSB</option>
+			<option value="NFM">NFM</option>
+			<option value="WFM">WFM</option>
+			<option value="CW">CW</option>
+			<option value="SAM">SAM</option>
+		</select>
+		<br/>
+		<label for="filter_bandwidth">Filter Bandwidth</label>
+		<input type="text" id="filter_bandwidth"></input>
+		<button id="filter_bandwidth_set">Set</button>
+		<br/>
+		<label for="vfo_frequency">VFO Frequency</label>
+		<input type="text" id="vfo_frequency" name="vfo_frequency">
+		<button id="vfo_frequency_set">Set</button>
+		</br>
+		<label for="center_frequency">Center Frequency</label>
+		<input type="text" id="center_frequency" name="center_frequency">
+		<button id="center_frequency_set">Set</button>
+		<br/><br/>		
+		<br/>
+		<canvas id="spectrum_canvas" width="512" height="200" style="border:1px solid #000000;"></canvas>
+		
+		<p>Message Log</p>
+		<pre id="log"></pre>
+	</body>
+</html>

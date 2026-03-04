@@ -1,0 +1,2 @@
+[console_scripts]
+wwvb-decode = wwvb_decode.__main__:main
