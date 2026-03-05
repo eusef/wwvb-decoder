@@ -84,16 +84,27 @@ class TestMultiplePulses:
     """Test detection of sequences of pulses."""
 
     def test_three_pulses(self, decoder):
-        """Detect M, 0, 1 in sequence."""
-        rate = 1000.0
-        gap = np.full(int(rate * 0.2), 0.9)  # 200ms between pulses
+        """Detect M, 0, 1 in sequence with realistic 1-second spacing.
 
-        m_low = np.full(int(rate * 0.8), 0.1)
-        z_low = np.full(int(rate * 0.2), 0.1)
-        o_low = np.full(int(rate * 0.5), 0.1)
+        WWVB sends exactly one pulse per second. Each second starts
+        with a falling edge (power drop). Consecutive falling edges
+        are exactly 1000ms apart:
+          Sec N:   low for pulse_duration, high for (1000 - pulse_duration)
+          Sec N+1: low for pulse_duration, high for (1000 - pulse_duration)
+        """
+        rate = 1000.0
+
+        def make_second(pulse_ms):
+            """One WWVB second: low (pulse) then high (gap)."""
+            low = np.full(int(rate * pulse_ms / 1000), 0.1)
+            high = np.full(int(rate * (1000 - pulse_ms) / 1000), 0.9)
+            return np.concatenate([low, high])
 
         envelope = np.concatenate([
-            gap, m_low, gap, z_low, gap, o_low, gap,
+            make_second(800),  # M
+            make_second(200),  # 0
+            make_second(500),  # 1
+            np.full(int(rate * 0.1), 0.9),  # trailing high
         ])
         pulses = decoder.process(envelope, rate)
         assert len(pulses) == 3

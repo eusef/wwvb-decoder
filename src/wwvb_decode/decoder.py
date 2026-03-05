@@ -35,6 +35,17 @@ class PulseDecoder:
         self._low_start_sample = 0
         self._sample_count = 0
 
+        # Refractory period: after a pulse STARTS (falling edge), ignore new
+        # falling edges for this many ms. WWVB sends exactly 1 pulse/sec,
+        # so consecutive falling edges are ~1000ms apart. A 900ms refractory
+        # from the falling edge blocks spurious noise pulses while allowing
+        # the next valid pulse (which arrives at ~1000ms).
+        # Measured from falling edge, not rising edge, because the gap
+        # between rising edge and next falling edge varies: 800ms after "0",
+        # 500ms after "1", only 200ms after "M".
+        self._refractory_ms = 900.0
+        self._refractory_until_sample = 0  # No refractory active initially
+
         # Pulse width classification boundaries (ms)
         # Widened from spec values to handle noisy/weak signals where
         # envelope edges are detected early, shortening apparent pulse widths.
@@ -63,12 +74,21 @@ class PulseDecoder:
         pulses = []
         ms_per_sample = 1000.0 / sample_rate
 
+        refractory_samples = self._refractory_ms / ms_per_sample
+
         for sample in envelope:
             if self._state == "HIGH":
                 # Looking for falling edge (HIGH -> LOW)
+                # But only if refractory period has elapsed
                 if sample < self.threshold_low:
-                    self._state = "LOW"
-                    self._low_start_sample = self._sample_count
+                    if self._sample_count >= self._refractory_until_sample:
+                        self._state = "LOW"
+                        self._low_start_sample = self._sample_count
+                        # Start refractory from this falling edge
+                        self._refractory_until_sample = (
+                            self._sample_count + int(refractory_samples)
+                        )
+                    # else: still in refractory, ignore this dip
             elif self._state == "LOW":
                 # Looking for rising edge (LOW -> HIGH)
                 if sample > self.threshold_high:
