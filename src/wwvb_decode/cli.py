@@ -17,8 +17,13 @@ class Config:
     plain: bool = False
     debug: bool = False
     antenna: str = "Hi-Z"
+    freq: int = 60000              # Tuning frequency in Hz
     if_gain: int | None = None     # IF gain reduction (0-59 for RSPdx)
     rf_gain: int | None = None     # LNA state / RF gain level
+    correlation: bool = False      # Use cross-correlation decoder
+    min_confidence: float = 0.5    # Minimum confidence for correlation decoder
+    max_errors: int = 8            # Max tolerated errors per frame (0=strict)
+    log_file: str | None = None    # Path to write decoder log
 
     @property
     def ws_url(self) -> str:
@@ -41,6 +46,14 @@ def parse_args(argv: list[str] | None = None) -> Config:
         type=int,
         default=5454,
         help="SDRConnect WebSocket port (default: 5454)",
+    )
+    parser.add_argument(
+        "--freq",
+        type=int,
+        default=60000,
+        metavar="HZ",
+        help="Tuning frequency in Hz (default: 60000). Adjust if your SDR "
+             "oscillator is offset, e.g. --freq 60020.",
     )
     parser.add_argument(
         "--no-tune",
@@ -100,6 +113,39 @@ def parse_args(argv: list[str] | None = None) -> Config:
              "For RSPdx: 0 (min) to 9 (max).",
     )
 
+    parser.add_argument(
+        "--correlation",
+        action="store_true",
+        default=False,
+        help="Use cross-correlation decoder instead of edge-based "
+             "(more robust on weak signals).",
+    )
+    parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=0.5,
+        metavar="F",
+        help="Minimum correlation confidence for valid bit, 0.0-1.0 "
+             "(default: 0.5). Only used with --correlation.",
+    )
+
+    parser.add_argument(
+        "--max-errors",
+        type=int,
+        default=8,
+        metavar="N",
+        help="Maximum tolerated errors per 60-symbol frame (default: 8). "
+             "Set to 0 for strict mode (all markers must be present).",
+    )
+
+    parser.add_argument(
+        "--log",
+        default=None,
+        metavar="FILE",
+        help="Write decoder log to FILE (pulses, sync, frames, signal). "
+             "Works with both TUI and --plain modes.",
+    )
+
     args = parser.parse_args(argv)
 
     # --debug implies --plain
@@ -109,6 +155,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
     return Config(
         host=args.host,
         port=args.port,
+        freq=args.freq,
         no_tune=args.no_tune,
         source=args.source,
         threshold=args.threshold,
@@ -118,4 +165,8 @@ def parse_args(argv: list[str] | None = None) -> Config:
         antenna=args.antenna,
         if_gain=args.if_gain,
         rf_gain=args.rf_gain,
+        correlation=args.correlation,
+        min_confidence=args.min_confidence,
+        max_errors=args.max_errors,
+        log_file=args.log,
     )

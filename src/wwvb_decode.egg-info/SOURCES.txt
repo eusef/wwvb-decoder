@@ -1,3 +1,5 @@
+LICENSE
+README.md
 pyproject.toml
 src/wwvb_decode/__init__.py
 src/wwvb_decode/__main__.py

@@ -269,6 +269,7 @@ class SDRConnectClient:
 
     async def configure_wwvb(
         self,
+        freq: int = 60000,
         antenna: str = "Hi-Z",
         if_gain: int | None = None,
         rf_gain: int | None = None,
@@ -296,8 +297,9 @@ class SDRConnectClient:
             await asyncio.sleep(0.5)
 
         # Set tuning - fire all set_property calls quickly (no response needed)
-        await self.set_property("device_center_frequency", "60000")
-        await self.set_property("device_vfo_frequency", "60000")
+        freq_str = str(freq)
+        await self.set_property("device_center_frequency", freq_str)
+        await self.set_property("device_vfo_frequency", freq_str)
         await self.set_property("demodulator", "AM")
         await self.set_property("filter_bandwidth", "100")
 

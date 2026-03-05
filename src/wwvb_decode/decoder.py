@@ -1,4 +1,9 @@
-"""Pulse width measurement and symbol classification for WWVB."""
+"""Pulse width measurement and symbol classification for WWVB.
+
+Two decoder implementations:
+  PulseDecoder        - edge-based threshold crossing (original)
+  CorrelationDecoder  - cross-correlation with templates (inspired by WWVB_15.ino)
+"""
 
 import logging
 from dataclasses import dataclass, field
@@ -124,8 +129,20 @@ class PulseDecoder:
                     duration_samples = self._sample_count - self._low_start_sample
                     duration_ms = duration_samples * ms_per_sample
                     if duration_ms > self._max_pulse_ms:
+                        start_time = self._low_start_sample / sample_rate
                         logger.debug(
-                            f"Pulse timeout at {duration_ms:.0f}ms, resetting"
+                            f"Pulse timeout at {duration_ms:.0f}ms, "
+                            f"emitting '?' at t={start_time:.3f}s"
+                        )
+                        # Emit "?" so frame assembler stays aligned
+                        pulse = Pulse(
+                            start_time=start_time,
+                            duration_ms=duration_ms,
+                            symbol="?",
+                        )
+                        pulses.append(pulse)
+                        self._pulse_counts["?"] = (
+                            self._pulse_counts.get("?", 0) + 1
                         )
                         self._state = "HIGH"
 
@@ -173,3 +190,247 @@ class PulseDecoder:
         """Reset decoder state (for resync)."""
         self._state = "HIGH"
         self._low_start_sample = self._sample_count
+
+
+class CorrelationDecoder:
+    """Classify WWVB symbols using cross-correlation with templates.
+
+    Instead of detecting edges and measuring pulse widths, this decoder
+    accumulates 1-second windows of envelope data and correlates each
+    window against three ideal templates (0, 1, M). The best-matching
+    template determines the symbol. A confidence threshold rejects
+    ambiguous windows as "?".
+
+    Inspired by the Arduino WWVB_15 implementation which uses unweighted
+    cross-correlation at 50 Hz. This version uses continuous dot-product
+    correlation at 1000 Hz for better SNR on weak SDR signals.
+
+    Three-phase operation:
+      Alignment: Slide a window across the first few seconds of data to
+                 find the offset where correlation peaks. This aligns
+                 the 1-second windows with actual WWVB second boundaries.
+      Pre-sync:  Classify aligned windows, watch for two consecutive M
+      Post-sync: Emit aligned Pulse objects, one per second
+    """
+
+    # Template durations in ms (= samples at 1000 Hz)
+    PULSE_0_MS = 200
+    PULSE_1_MS = 500
+    PULSE_M_MS = 800
+    WINDOW_MS = 1000
+
+    # Alignment: scan this many seconds of data to find the boundary
+    _ALIGN_SECONDS = 3
+
+    def __init__(
+        self,
+        sample_rate: float = 1000.0,
+        min_confidence: float = 0.5,
+    ):
+        self._sample_rate = sample_rate
+        self._min_confidence = min_confidence
+        self._window_size = int(sample_rate * self.WINDOW_MS / 1000)
+
+        # Build zero-mean templates for each symbol type.
+        # Template structure: LOW during pulse, HIGH during gap.
+        # Each template is normalized to zero mean so dot product with
+        # a zero-mean window measures shape similarity, not amplitude.
+        self._templates = {}
+        for sym, pulse_ms in [("0", self.PULSE_0_MS),
+                               ("1", self.PULSE_1_MS),
+                               ("M", self.PULSE_M_MS)]:
+            pulse_samples = int(sample_rate * pulse_ms / 1000)
+            gap_samples = self._window_size - pulse_samples
+            t = np.concatenate([
+                np.full(pulse_samples, -1.0),
+                np.full(gap_samples, 1.0),
+            ])
+            # Zero-mean the template itself
+            t = t - np.mean(t)
+            self._templates[sym] = t
+
+        # State
+        self._buffer = np.array([], dtype=np.float64)
+        self._sample_count = 0
+        self._aligned = False  # Have we found the second boundary?
+        self._synced = False   # Have we found two consecutive M?
+        self._last_symbol = ""
+        self._consecutive_markers = 0
+
+        # Stats (match PulseDecoder interface)
+        self._pulse_counts: dict[str, int] = {"0": 0, "1": 0, "M": 0, "?": 0}
+        self._pulse_sums: dict[str, float] = {"0": 0.0, "1": 0.0, "M": 0.0}
+
+    def process(self, envelope: np.ndarray, sample_rate: float) -> list[Pulse]:
+        """Process envelope chunk, return classified pulses.
+
+        Args:
+            envelope: float64 normalized envelope (0.0-1.0)
+            sample_rate: samples per second (typically 1000 Hz)
+
+        Returns:
+            List of Pulse objects (one per complete 1-second window)
+        """
+        pulses: list[Pulse] = []
+        self._buffer = np.concatenate([self._buffer, envelope])
+
+        # Phase 0: Alignment. Accumulate enough data, then find the
+        # offset within the first second where correlation peaks.
+        if not self._aligned:
+            needed = int(self._ALIGN_SECONDS * self._window_size)
+            if len(self._buffer) < needed:
+                return pulses  # Keep accumulating
+
+            offset = self._find_alignment(self._buffer[:needed])
+            # Discard samples before the alignment offset
+            self._buffer = self._buffer[offset:]
+            self._sample_count = offset
+            self._aligned = True
+            logger.info(
+                f"Correlation decoder: aligned at offset {offset} samples "
+                f"({offset / sample_rate * 1000:.0f}ms)"
+            )
+
+        # Process aligned 1-second windows
+        while len(self._buffer) >= self._window_size:
+            window = self._buffer[:self._window_size]
+            self._buffer = self._buffer[self._window_size:]
+
+            symbol, confidence = self._classify(window)
+            start_time = self._sample_count / sample_rate
+            self._sample_count += self._window_size
+
+            logger.debug(
+                f"Corr: {symbol} (conf={confidence:.2f}) "
+                f"at t={start_time:.3f}s"
+            )
+
+            if not self._synced:
+                # Pre-sync: look for two consecutive markers
+                if symbol == "M":
+                    self._consecutive_markers += 1
+                    if self._consecutive_markers >= 2:
+                        self._synced = True
+                        logger.info("Correlation decoder: frame sync acquired")
+                        # Emit the second M as position 0 of the new frame
+                        pulse = Pulse(
+                            start_time=start_time,
+                            duration_ms=float(self.WINDOW_MS),
+                            symbol="M",
+                        )
+                        pulses.append(pulse)
+                        self._update_stats("M")
+                else:
+                    self._consecutive_markers = 0
+                    # Emit pre-sync symbols so the FrameAssembler sees
+                    # non-M symbols too (needed to reset consecutive count)
+            else:
+                # Post-sync: emit every classified symbol
+                pulse = Pulse(
+                    start_time=start_time,
+                    duration_ms=float(self.WINDOW_MS),
+                    symbol=symbol,
+                )
+                pulses.append(pulse)
+                self._update_stats(symbol)
+
+        return pulses
+
+    def _find_alignment(self, data: np.ndarray) -> int:
+        """Slide a 1-second window across the data to find where
+        the best correlation occurs. Returns the optimal offset (0 to
+        window_size-1) that aligns windows with WWVB second boundaries.
+
+        Tests every 10th sample for speed (1ms resolution at 1000Hz).
+        """
+        best_offset = 0
+        best_score = -np.inf
+        step = max(1, self._window_size // 100)  # 10 samples at 1kHz
+
+        for offset in range(0, self._window_size, step):
+            # Score this offset by summing best correlations across
+            # all complete windows
+            total_score = 0.0
+            n_windows = 0
+            pos = offset
+            while pos + self._window_size <= len(data):
+                window = data[pos:pos + self._window_size]
+                _, confidence = self._classify(window)
+                total_score += confidence
+                n_windows += 1
+                pos += self._window_size
+
+            if n_windows > 0:
+                avg_score = total_score / n_windows
+                if avg_score > best_score:
+                    best_score = avg_score
+                    best_offset = offset
+
+        logger.debug(
+            f"Alignment search: best offset={best_offset}, "
+            f"avg_confidence={best_score:.3f}"
+        )
+        return best_offset
+
+    def _classify(self, window: np.ndarray) -> tuple[str, float]:
+        """Correlate normalized window against zero-mean templates.
+
+        Per-window normalization (zero-mean, unit-norm) removes amplitude
+        dependence so classification works on weak signals where the
+        envelope doesn't swing cleanly between 0 and 1. The result is
+        cosine similarity: 1.0 = perfect shape match, 0.0 = orthogonal.
+
+        Returns:
+            (symbol, confidence) where symbol is "0", "1", "M", or "?"
+            Confidence is cosine similarity, ranging 0.0 to 1.0.
+        """
+        # Center on actual window mean (not fixed 0.5)
+        centered = window - np.mean(window)
+
+        # Normalize to unit norm for cosine similarity
+        norm = np.linalg.norm(centered)
+        if norm < 1e-10:
+            return "?", 0.0  # Flat signal, no information
+        centered = centered / norm
+
+        correlations = {}
+        for sym, template in self._templates.items():
+            # Templates are already zero-mean; normalize to unit norm
+            t_norm = np.linalg.norm(template)
+            correlations[sym] = float(np.dot(centered, template / t_norm))
+
+        best_sym = max(correlations, key=correlations.get)
+        best_corr = correlations[best_sym]
+
+        # Confidence = cosine similarity of best match (0..1)
+        confidence = max(0.0, best_corr)
+
+        if confidence < self._min_confidence:
+            return "?", confidence
+
+        return best_sym, confidence
+
+    def _update_stats(self, symbol: str) -> None:
+        """Update running pulse statistics."""
+        self._pulse_counts[symbol] = self._pulse_counts.get(symbol, 0) + 1
+
+    @property
+    def avg_pulse_widths(self) -> dict[str, float]:
+        """Not applicable for correlation decoder, return zeros."""
+        return {"0": 0.0, "1": 0.0, "M": 0.0}
+
+    @property
+    def total_pulses(self) -> int:
+        return sum(self._pulse_counts.values())
+
+    @property
+    def is_synced(self) -> bool:
+        return self._synced
+
+    def reset(self) -> None:
+        """Reset to pre-sync state."""
+        self._synced = False
+        self._aligned = False
+        self._consecutive_markers = 0
+        self._last_symbol = ""
+        self._buffer = np.array([], dtype=np.float64)

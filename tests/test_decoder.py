@@ -1,9 +1,9 @@
-"""Unit tests for pulse width decoder."""
+"""Unit tests for pulse width decoder and correlation decoder."""
 
 import numpy as np
 import pytest
 
-from wwvb_decode.decoder import PulseDecoder, Pulse
+from wwvb_decode.decoder import CorrelationDecoder, PulseDecoder, Pulse
 
 
 @pytest.fixture
@@ -113,6 +113,46 @@ class TestMultiplePulses:
         assert pulses[2].symbol == "1"
 
 
+class TestPulseTimeout:
+    """Test that timeouts emit '?' symbols instead of silently resetting."""
+
+    def test_timeout_emits_question_mark(self, decoder):
+        """A signal that drops low and never comes back should emit '?'."""
+        rate = 1000.0
+        # 200ms high, then 1200ms low (exceeds max_pulse_ms of 1100)
+        envelope = np.concatenate([
+            np.full(int(rate * 0.2), 0.9),
+            np.full(int(rate * 1.2), 0.1),
+        ])
+        pulses = decoder.process(envelope, rate)
+        assert len(pulses) == 1
+        assert pulses[0].symbol == "?"
+
+    def test_timeout_followed_by_valid_pulse(self, decoder):
+        """After a timeout '?', the next valid pulse should still be detected."""
+        rate = 1000.0
+
+        def make_second(pulse_ms):
+            low = np.full(int(rate * pulse_ms / 1000), 0.1)
+            high = np.full(int(rate * (1000 - pulse_ms) / 1000), 0.9)
+            return np.concatenate([low, high])
+
+        envelope = np.concatenate([
+            np.full(int(rate * 0.2), 0.9),  # lead-in
+            np.full(int(rate * 1.2), 0.1),  # timeout pulse (1200ms low)
+            np.full(int(rate * 0.2), 0.9),  # gap
+            make_second(200),               # valid "0" pulse
+            np.full(int(rate * 0.1), 0.9),  # trailing
+        ])
+        pulses = decoder.process(envelope, rate)
+        assert len(pulses) >= 2
+        assert pulses[0].symbol == "?"
+        # The valid pulse should follow
+        valid_pulses = [p for p in pulses if p.symbol != "?"]
+        assert len(valid_pulses) >= 1
+        assert valid_pulses[0].symbol == "0"
+
+
 class TestPulseStats:
     """Test running average pulse width statistics."""
 
@@ -128,3 +168,150 @@ class TestPulseStats:
         avgs = decoder.avg_pulse_widths
         assert 180 < avgs["0"] < 220
         assert avgs["1"] == 0.0  # No 1s detected
+
+
+# ==================== CorrelationDecoder Tests ====================
+
+
+def _make_wwvb_second(pulse_ms, rate=1000.0):
+    """One WWVB second: LOW for pulse_ms, HIGH for remainder."""
+    low = np.zeros(int(rate * pulse_ms / 1000))
+    high = np.ones(int(rate * (1000 - pulse_ms) / 1000))
+    return np.concatenate([low, high])
+
+
+@pytest.fixture
+def corr_decoder():
+    return CorrelationDecoder(sample_rate=1000.0, min_confidence=0.5)
+
+
+class TestCorrelationClassification:
+    """Test that correlation decoder classifies ideal signals correctly."""
+
+    def test_zero_classification(self, corr_decoder):
+        """200ms pulse should classify as '0'."""
+        window = _make_wwvb_second(200)
+        pulses = corr_decoder.process(window, 1000.0)
+        # Not synced yet, so no pulses emitted (need MM first)
+        # But we can test _classify directly
+        symbol, conf = corr_decoder._classify(window)
+        assert symbol == "0"
+        assert conf > 0.5
+
+    def test_one_classification(self, corr_decoder):
+        """500ms pulse should classify as '1'."""
+        window = _make_wwvb_second(500)
+        symbol, conf = corr_decoder._classify(window)
+        assert symbol == "1"
+        assert conf > 0.5
+
+    def test_marker_classification(self, corr_decoder):
+        """800ms pulse should classify as 'M'."""
+        window = _make_wwvb_second(800)
+        symbol, conf = corr_decoder._classify(window)
+        assert symbol == "M"
+        assert conf > 0.5
+
+    def test_noisy_signal_still_classifies(self, corr_decoder):
+        """Add moderate noise - should still classify correctly."""
+        rng = np.random.default_rng(42)
+        window = _make_wwvb_second(500)
+        noise = rng.normal(0, 0.15, len(window))
+        noisy = np.clip(window + noise, 0.0, 1.0)
+        symbol, conf = corr_decoder._classify(noisy)
+        assert symbol == "1"
+        assert conf > 0.3
+
+    def test_very_noisy_signal_rejected(self, corr_decoder):
+        """Pure noise should be rejected as '?'."""
+        rng = np.random.default_rng(42)
+        window = rng.uniform(0.3, 0.7, 1000)  # Random mid-range values
+        symbol, conf = corr_decoder._classify(window)
+        assert symbol == "?" or conf < 0.5
+
+
+class TestCorrelationSync:
+    """Test frame synchronization via consecutive markers."""
+
+    def test_sync_on_double_marker(self, corr_decoder):
+        """Two consecutive M windows should trigger sync."""
+        # Need 3+ seconds for alignment phase, then sync detection
+        envelope = np.concatenate([
+            _make_wwvb_second(200),  # "0" - alignment data
+            _make_wwvb_second(800),  # M
+            _make_wwvb_second(800),  # M - triggers sync
+            _make_wwvb_second(200),  # "0" - post-sync
+        ])
+        all_pulses = corr_decoder.process(envelope, 1000.0)
+        assert corr_decoder.is_synced
+        # Should have M (sync) + "0" (post-sync)
+        assert len(all_pulses) >= 1
+        synced_m = [p for p in all_pulses if p.symbol == "M"]
+        assert len(synced_m) >= 1
+        # Last pulse should be "0"
+        assert all_pulses[-1].symbol == "0"
+
+    def test_non_marker_resets_consecutive_count(self, corr_decoder):
+        """A non-M between two M's should not trigger sync."""
+        envelope = np.concatenate([
+            _make_wwvb_second(800),  # M
+            _make_wwvb_second(200),  # "0" - breaks consecutive M
+            _make_wwvb_second(800),  # M - only 1 consecutive, no sync
+        ])
+        corr_decoder.process(envelope, 1000.0)
+        assert not corr_decoder.is_synced
+
+    def test_reset_clears_sync(self, corr_decoder):
+        """reset() should return to pre-sync state."""
+        envelope = np.concatenate([
+            _make_wwvb_second(200),  # alignment data
+            _make_wwvb_second(800),  # M
+            _make_wwvb_second(800),  # M - triggers sync
+        ])
+        corr_decoder.process(envelope, 1000.0)
+        assert corr_decoder.is_synced
+
+        corr_decoder.reset()
+        assert not corr_decoder.is_synced
+
+
+class TestCorrelationSequence:
+    """Test multi-symbol sequences through the correlation decoder."""
+
+    def test_full_sequence(self, corr_decoder):
+        """M, M (sync), then 0, 1, M sequence."""
+        rate = 1000.0
+        envelope = np.concatenate([
+            _make_wwvb_second(800),  # M - pre-sync
+            _make_wwvb_second(800),  # M - sync acquired
+            _make_wwvb_second(200),  # 0
+            _make_wwvb_second(500),  # 1
+            _make_wwvb_second(800),  # M
+        ])
+
+        pulses = corr_decoder.process(envelope, rate)
+        # Should get: M (from sync), 0, 1, M = 4 pulses
+        assert len(pulses) == 4
+        assert pulses[0].symbol == "M"
+        assert pulses[1].symbol == "0"
+        assert pulses[2].symbol == "1"
+        assert pulses[3].symbol == "M"
+
+    def test_chunked_input(self, corr_decoder):
+        """Feeding data in small chunks should produce same results."""
+        rate = 1000.0
+        full = np.concatenate([
+            _make_wwvb_second(800),
+            _make_wwvb_second(800),
+            _make_wwvb_second(200),
+        ])
+
+        # Feed in 250-sample chunks
+        all_pulses = []
+        for i in range(0, len(full), 250):
+            chunk = full[i:i + 250]
+            all_pulses.extend(corr_decoder.process(chunk, rate))
+
+        assert len(all_pulses) == 2  # M (sync) + 0
+        assert all_pulses[0].symbol == "M"
+        assert all_pulses[1].symbol == "0"

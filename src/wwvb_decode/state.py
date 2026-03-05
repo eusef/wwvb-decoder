@@ -12,7 +12,7 @@ from enum import Enum
 import numpy as np
 
 from .cli import Config
-from .decoder import PulseDecoder
+from .decoder import CorrelationDecoder, PulseDecoder
 from .envelope import EnvelopeDetector
 from .frame import FrameAssembler, FrameEventType
 from .plain import PlainDisplay
@@ -43,8 +43,16 @@ class WWVBApp:
         self.state = AppState.CONNECTING
         self.client = SDRConnectClient(config.host, config.port)
         self.envelope_detector = EnvelopeDetector()
-        self.pulse_decoder = PulseDecoder(threshold=config.threshold)
-        self.assembler = FrameAssembler(min_frames=config.min_frames)
+        if config.correlation:
+            self.pulse_decoder = CorrelationDecoder(
+                min_confidence=config.min_confidence,
+            )
+        else:
+            self.pulse_decoder = PulseDecoder(threshold=config.threshold)
+        self.assembler = FrameAssembler(
+            min_frames=config.min_frames,
+            max_errors=config.max_errors,
+        )
 
         # Display
         self.display = None
@@ -64,9 +72,24 @@ class WWVBApp:
         self._last_audio_time = 0.0
         self._running = False
 
+        # Gap-fill tracking: time of last emitted pulse (from stream start)
+        self._last_pulse_stream_time: float | None = None
+
+        # File logger for --log
+        self._log_file = None
+        if config.log_file:
+            self._log_file = open(config.log_file, "w")
+
     @property
     def uptime_seconds(self) -> float:
         return time.monotonic() - self._start_time
+
+    def _file_log(self, category: str, message: str) -> None:
+        """Write a line to the --log file (if open)."""
+        if self._log_file:
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            self._log_file.write(f"{ts} {category:8s} {message}\n")
+            self._log_file.flush()
 
     def _log(self, message: str, category: str = "INFO") -> None:
         """Add an entry to the activity log."""
@@ -80,6 +103,9 @@ class WWVBApp:
         # Also log to plain display if active
         if isinstance(self.display, PlainDisplay):
             self.display.log(category, message)
+
+        # Write to --log file
+        self._file_log(category, message)
 
         logger.info(message)
 
@@ -133,13 +159,14 @@ class WWVBApp:
                 self._update_display()
 
                 results = await self.client.configure_wwvb(
+                    freq=self.config.freq,
                     antenna=self.config.antenna,
                     if_gain=self.config.if_gain,
                     rf_gain=self.config.rf_gain,
                 )
 
                 config_msg = (
-                    f"Tuned to 60000 Hz | AM | BW: 100 Hz | AGC: off | Antenna: {self.config.antenna}"
+                    f"Tuned to {self.config.freq} Hz | AM | BW: 100 Hz | AGC: off | Antenna: {self.config.antenna}"
                 )
                 if self.config.if_gain is not None:
                     config_msg += f" | IF gain red: {self.config.if_gain}"
@@ -212,6 +239,11 @@ class WWVBApp:
         # Print summary to stdout (visible after TUI clears)
         print(f"\n{summary}")
 
+        # Close log file
+        if self._log_file:
+            self._log_file.close()
+            self._log_file = None
+
         # Disconnect
         try:
             await self.client.disconnect()
@@ -249,6 +281,34 @@ class WWVBApp:
             )
 
             for pulse in pulses:
+                # Gap-fill: if >1.5s since last pulse, insert "?" fillers
+                # for each missed second (handles case where no falling edge
+                # was detected at all, so PulseDecoder emitted nothing)
+                if self._last_pulse_stream_time is not None:
+                    gap = pulse.start_time - self._last_pulse_stream_time
+                    if gap > 1.5:
+                        missed = int(round(gap)) - 1
+                        for _ in range(missed):
+                            pos = self.assembler.current_position
+                            self._file_log(
+                                "GAPFILL",
+                                f"pos={pos:2d} sym=? (missed pulse)",
+                            )
+                            if self.config.debug and isinstance(self.display, PlainDisplay):
+                                self.display.log_debug("Gap-fill: inserted '?'")
+                            event = self.assembler.add_symbol("?")
+                            if event:
+                                self._handle_frame_event(event)
+                self._last_pulse_stream_time = pulse.start_time
+
+                # Log pulse to file and/or plain display
+                pos = self.assembler.current_position
+                self._file_log(
+                    "PULSE",
+                    f"pos={pos:2d} sym={pulse.symbol} "
+                    f"width={pulse.duration_ms:.0f}ms "
+                    f"t={pulse.start_time:.3f}s",
+                )
                 if self.config.debug and isinstance(self.display, PlainDisplay):
                     self.display.log_debug(
                         f"Pulse: {pulse.duration_ms:.1f}ms -> {pulse.symbol}"
@@ -318,6 +378,14 @@ class WWVBApp:
                         self.signal_snr = float(snr)
                     except ValueError:
                         pass
+
+                # Log signal levels to file
+                if self.signal_power is not None and self.signal_snr is not None:
+                    self._file_log(
+                        "SIGNAL",
+                        f"power={self.signal_power:.1f}dBm "
+                        f"snr={self.signal_snr:.1f}dB",
+                    )
 
                 # Check control status
                 control = await self.client.get_property("can_control")
@@ -395,7 +463,10 @@ class WWVBApp:
 
         Uses a background thread because terminal reads are blocking and
         connect_read_pipe conflicts with Rich Live's terminal handling.
+        Uses select() with a timeout so the thread can exit cleanly on
+        shutdown instead of blocking forever on stdin.
         """
+        import select
         import termios
         import tty
 
@@ -414,15 +485,23 @@ class WWVBApp:
                 tty.setcbreak(fd)
                 while self._running:
                     try:
+                        # Use select with 0.5s timeout so we can check
+                        # self._running and exit cleanly on shutdown
+                        ready, _, _ = select.select([sys.stdin], [], [], 0.5)
+                        if not ready:
+                            continue
                         ch = sys.stdin.buffer.read(1)
                         if not ch:
                             continue
                         if ch == b"\x1b":
-                            seq = sys.stdin.buffer.read(2)
-                            if seq == b"[C":  # Right arrow
-                                display.tips_next_page()
-                            elif seq == b"[D":  # Left arrow
-                                display.tips_prev_page()
+                            # Wait briefly for escape sequence
+                            ready2, _, _ = select.select([sys.stdin], [], [], 0.1)
+                            if ready2:
+                                seq = sys.stdin.buffer.read(2)
+                                if seq == b"[C":  # Right arrow
+                                    display.tips_next_page()
+                                elif seq == b"[D":  # Left arrow
+                                    display.tips_prev_page()
                         elif ch == b"q":
                             self._running = False
                             break

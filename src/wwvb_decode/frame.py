@@ -103,11 +103,17 @@ def bcd_decode(bits: list[str], weights: list[int]) -> int:
     return total
 
 
-def parse_frame(bits: list[str | None]) -> tuple[WWVBTime | None, str | None]:
+def parse_frame(
+    bits: list[str | None],
+    max_errors: int = 0,
+) -> tuple[WWVBTime | None, str | None]:
     """Parse a complete 60-symbol WWVB frame.
 
     Args:
         bits: 60-element list of symbols ("0", "1", "M", "?", or None)
+        max_errors: Maximum tolerated errors (missing markers, "?" symbols
+                    in data positions). 0 = strict mode (original behavior).
+                    The Arduino WWVB_15 reference uses max_errors=8.
 
     Returns:
         (WWVBTime, None) on success or (None, error_reason) on failure
@@ -115,10 +121,37 @@ def parse_frame(bits: list[str | None]) -> tuple[WWVBTime | None, str | None]:
     if len(bits) != 60:
         return None, f"Frame has {len(bits)} bits, expected 60"
 
-    # 1. Verify markers at expected positions
+    # 1. Count errors: missing markers, "?" in data positions
+    error_count = 0
+    marker_errors = []
     for pos in MARKER_POSITIONS:
         if bits[pos] != "M":
-            return None, f"Expected marker at position {pos}, got '{bits[pos]}'"
+            marker_errors.append(pos)
+            error_count += 1
+
+    # Count "?" in non-marker positions
+    for i, bit in enumerate(bits):
+        if i not in MARKER_POSITIONS and bit == "?":
+            error_count += 1
+
+    if error_count > max_errors:
+        if marker_errors:
+            return None, (
+                f"Too many errors ({error_count}): "
+                f"missing markers at {marker_errors}"
+            )
+        return None, f"Too many errors ({error_count}) in frame"
+
+    # Treat "?" in data positions as "0" for BCD decoding
+    # (conservative: unknown bits contribute 0 to totals)
+    clean_bits = list(bits)
+    for i in range(60):
+        if clean_bits[i] in ("?", None):
+            clean_bits[i] = "0"
+        # Force expected markers to "M" if we're in tolerant mode
+        if i in MARKER_POSITIONS and clean_bits[i] != "M":
+            clean_bits[i] = "M"
+    bits = clean_bits
 
     # 2. Check unused positions are "0" (warn but don't reject)
     for pos in UNUSED_POSITIONS:
@@ -237,13 +270,14 @@ class FrameAssembler:
     (positions 59 and 0), then fills a 60-element buffer.
     """
 
-    def __init__(self, min_frames: int = 2):
+    def __init__(self, min_frames: int = 2, max_errors: int = 0):
         self._buffer: list[str | None] = [None] * 60
         self._position = 0
         self._synced = False
         self._consecutive_markers = 0
         self._valid_frames: list[WWVBTime] = []
         self._min_frames = min_frames
+        self._max_errors = max_errors
         self._confirmed_time: WWVBTime | None = None
         self._last_decoded: WWVBTime | None = None
         self._total_frames = 0
@@ -316,15 +350,25 @@ class FrameAssembler:
         frame_bits = list(self._buffer)
         self._buffer = [None] * 60
 
-        decoded_time, error = parse_frame(frame_bits)
+        decoded_time, error = parse_frame(frame_bits, max_errors=self._max_errors)
 
         if error:
             self._error_frames += 1
             self._consecutive_good = 0
             logger.warning(f"Frame error: {error}")
 
-            # Check if we lost sync (marker missing at expected position)
-            if "marker" in error.lower():
+            # Only lose sync if errors are overwhelming (> 2x tolerance)
+            # With error tolerance, occasional marker misses are expected
+            if "Too many errors" in error and self._max_errors > 0:
+                # Parse error count from message
+                try:
+                    err_count = int(error.split("(")[1].split(")")[0])
+                    if err_count > self._max_errors * 2:
+                        self._synced = False
+                        self._consecutive_markers = 0
+                except (IndexError, ValueError):
+                    pass
+            elif "marker" in error.lower() and self._max_errors == 0:
                 self._synced = False
                 self._consecutive_markers = 0
 

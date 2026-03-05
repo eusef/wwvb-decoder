@@ -359,3 +359,73 @@ class TestFrameAssembler:
 
         assert asm.confirmed_time is not None
         assert asm.confirmed_time.minute == 19
+
+
+class TestErrorTolerance:
+    """Test frame parsing with max_errors > 0."""
+
+    def test_one_missing_marker_tolerated(self):
+        """Frame with one missing marker should parse with max_errors >= 1."""
+        bits = _make_test_frame(year=26, day=64, hour=3, minute=18)
+        bits[9] = "?"  # Corrupt marker at position 9
+
+        # Strict mode rejects
+        time_obj, error = parse_frame(bits, max_errors=0)
+        assert time_obj is None
+
+        # Tolerant mode accepts
+        time_obj, error = parse_frame(bits, max_errors=1)
+        assert error is None
+        assert time_obj is not None
+        assert time_obj.minute == 18
+
+    def test_question_marks_in_data_tolerated(self):
+        """'?' in data positions should be treated as '0' in tolerant mode."""
+        bits = _make_test_frame(year=26, day=64, hour=3, minute=18)
+        # Corrupt a few data positions with '?'
+        bits[5] = "?"  # minutes units bit
+        bits[15] = "?"  # hours units bit
+
+        time_obj, error = parse_frame(bits, max_errors=3)
+        assert error is None
+        assert time_obj is not None
+        # The corrupted bits are treated as 0, so values may differ
+        # but frame should parse without error
+
+    def test_too_many_errors_rejected(self):
+        """More errors than max_errors should still be rejected."""
+        bits = _make_test_frame()
+        # Corrupt all 6 markers
+        for pos in [0, 9, 19, 29, 39, 49]:
+            bits[pos] = "?"
+        # Plus some data errors
+        bits[1] = "?"
+        bits[2] = "?"
+        bits[3] = "?"
+
+        time_obj, error = parse_frame(bits, max_errors=8)
+        assert time_obj is None
+        assert "Too many errors (9)" in error
+
+    def test_assembler_with_max_errors(self):
+        """FrameAssembler should pass max_errors through to parse_frame."""
+        asm = FrameAssembler(min_frames=1, max_errors=4)
+        bits = _make_test_frame(year=26, day=64, hour=3, minute=18)
+        bits[9] = "?"  # Corrupt one marker
+
+        # Sync
+        asm.add_symbol("M")
+        asm.add_symbol("M")
+
+        # Feed frame
+        last_event = None
+        for i in range(1, 60):
+            event = asm.add_symbol(bits[i])
+            if event and event.event_type in (
+                FrameEventType.FRAME_COMPLETE,
+                FrameEventType.FRAME_ERROR,
+            ):
+                last_event = event
+
+        assert last_event is not None
+        assert last_event.event_type == FrameEventType.FRAME_COMPLETE
