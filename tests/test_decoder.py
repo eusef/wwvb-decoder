@@ -182,7 +182,9 @@ def _make_wwvb_second(pulse_ms, rate=1000.0):
 
 @pytest.fixture
 def corr_decoder():
-    return CorrelationDecoder(sample_rate=1000.0, min_confidence=0.5)
+    # lpf_cutoff=999 disables LPF rounding (above Nyquist), so sharp
+    # test signals match the sharp templates directly.
+    return CorrelationDecoder(sample_rate=1000.0, min_confidence=0.5, lpf_cutoff=999.0)
 
 
 class TestCorrelationClassification:

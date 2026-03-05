@@ -20,6 +20,7 @@ class Pulse:
     start_time: float  # seconds since stream start
     duration_ms: float  # pulse width in milliseconds
     symbol: str  # "0", "1", "M", or "?"
+    confidence: float = 0.0  # 0.0-1.0 classification confidence
 
 
 class PulseDecoder:
@@ -33,12 +34,21 @@ class PulseDecoder:
       outside    -> "?" (error/noise)
     """
 
-    def __init__(self, threshold: float = 0.5, hysteresis: float = 0.05):
+    def __init__(self, threshold: float = 0.5, hysteresis: float = 0.10,
+                 debounce_ms: float = 100.0):
         self.threshold_high = threshold + hysteresis  # Rising edge threshold
         self.threshold_low = threshold - hysteresis  # Falling edge threshold
-        self._state = "HIGH"  # "HIGH" = full power, "LOW" = reduced power
+        self._state = "HIGH"  # "HIGH", "LOW", or "CONFIRMING"
         self._low_start_sample = 0
         self._sample_count = 0
+
+        # Rising-edge debounce: after signal crosses above threshold_high,
+        # require it to STAY above for debounce_ms before finalizing the
+        # pulse end. If it drops back below threshold_low during this
+        # window, it was a noise spike - return to LOW and keep measuring.
+        # This is the primary defense against noise splitting markers.
+        self._debounce_ms = debounce_ms
+        self._confirm_start_sample = 0  # When CONFIRMING state began
 
         # Refractory period: after a pulse STARTS (falling edge), ignore new
         # falling edges for this many ms. WWVB sends exactly 1 pulse/sec,
@@ -58,9 +68,9 @@ class PulseDecoder:
         # Observed weak signal: 0~167ms, 1~450ms, M~732ms
         self._min_pulse_ms = 60   # Reject shorter than this
         self._max_pulse_ms = 1100  # Reject longer than this
-        self._zero_max_ms = 330   # 0: ~100-330ms (was 350)
-        self._one_max_ms = 620    # 1: ~330-620ms (was 650)
-        self._marker_max_ms = 950 # M: ~620-950ms (was 900)
+        self._zero_max_ms = 330   # 0: ~60-330ms
+        self._one_max_ms = 580    # 1: ~330-580ms
+        self._marker_max_ms = 950 # M: ~580-950ms
 
         # Running pulse width stats
         self._pulse_counts: dict[str, int] = {"0": 0, "1": 0, "M": 0, "?": 0}
@@ -68,6 +78,12 @@ class PulseDecoder:
 
     def process(self, envelope: np.ndarray, sample_rate: float) -> list[Pulse]:
         """Detect pulses from normalized envelope samples.
+
+        Uses a 3-state machine:
+          HIGH       - full power, waiting for falling edge
+          LOW        - reduced power (pulse in progress), measuring duration
+          CONFIRMING - signal crossed above threshold, waiting debounce_ms
+                       to confirm it's a real rising edge (not noise)
 
         Args:
             envelope: float64 normalized envelope (0.0-1.0) at sample_rate
@@ -80,6 +96,7 @@ class PulseDecoder:
         ms_per_sample = 1000.0 / sample_rate
 
         refractory_samples = self._refractory_ms / ms_per_sample
+        debounce_samples = self._debounce_ms / ms_per_sample
 
         for sample in envelope:
             if self._state == "HIGH":
@@ -94,36 +111,13 @@ class PulseDecoder:
                             self._sample_count + int(refractory_samples)
                         )
                     # else: still in refractory, ignore this dip
+
             elif self._state == "LOW":
                 # Looking for rising edge (LOW -> HIGH)
                 if sample > self.threshold_high:
-                    self._state = "HIGH"
-                    duration_samples = self._sample_count - self._low_start_sample
-                    duration_ms = duration_samples * ms_per_sample
-                    start_time = self._low_start_sample / sample_rate
-
-                    # Classify the pulse
-                    symbol = self._classify(duration_ms)
-
-                    if symbol != "_":  # "_" means rejected (too short/long)
-                        pulse = Pulse(
-                            start_time=start_time,
-                            duration_ms=duration_ms,
-                            symbol=symbol,
-                        )
-                        pulses.append(pulse)
-
-                        # Update stats
-                        self._pulse_counts[symbol] = (
-                            self._pulse_counts.get(symbol, 0) + 1
-                        )
-                        if symbol in self._pulse_sums:
-                            self._pulse_sums[symbol] += duration_ms
-
-                        logger.debug(
-                            f"Pulse: {duration_ms:.1f}ms -> {symbol} "
-                            f"at t={start_time:.3f}s"
-                        )
+                    # Don't finalize yet - enter CONFIRMING state
+                    self._state = "CONFIRMING"
+                    self._confirm_start_sample = self._sample_count
                 else:
                     # Check for timeout (missed rising edge)
                     duration_samples = self._sample_count - self._low_start_sample
@@ -134,7 +128,6 @@ class PulseDecoder:
                             f"Pulse timeout at {duration_ms:.0f}ms, "
                             f"emitting '?' at t={start_time:.3f}s"
                         )
-                        # Emit "?" so frame assembler stays aligned
                         pulse = Pulse(
                             start_time=start_time,
                             duration_ms=duration_ms,
@@ -145,6 +138,48 @@ class PulseDecoder:
                             self._pulse_counts.get("?", 0) + 1
                         )
                         self._state = "HIGH"
+
+            elif self._state == "CONFIRMING":
+                # Signal crossed above threshold - is it real or noise?
+                if sample < self.threshold_low:
+                    # Dropped back below threshold - it was a noise spike.
+                    # Return to LOW, pulse is still in progress.
+                    self._state = "LOW"
+                    logger.debug(
+                        f"Debounce rejected false rising edge at "
+                        f"t={self._sample_count / sample_rate:.3f}s"
+                    )
+                elif (self._sample_count - self._confirm_start_sample) >= debounce_samples:
+                    # Stayed above threshold for debounce period - real rising edge.
+                    # Measure pulse from low_start to where it first crossed high
+                    # (confirm_start), not current sample, for accurate width.
+                    duration_samples = self._confirm_start_sample - self._low_start_sample
+                    duration_ms = duration_samples * ms_per_sample
+                    start_time = self._low_start_sample / sample_rate
+
+                    symbol = self._classify(duration_ms)
+
+                    if symbol != "_":
+                        pulse = Pulse(
+                            start_time=start_time,
+                            duration_ms=duration_ms,
+                            symbol=symbol,
+                        )
+                        pulses.append(pulse)
+
+                        self._pulse_counts[symbol] = (
+                            self._pulse_counts.get(symbol, 0) + 1
+                        )
+                        if symbol in self._pulse_sums:
+                            self._pulse_sums[symbol] += duration_ms
+
+                        logger.debug(
+                            f"Pulse: {duration_ms:.1f}ms -> {symbol} "
+                            f"at t={start_time:.3f}s"
+                        )
+
+                    self._state = "HIGH"
+                # else: still confirming, wait more samples
 
             self._sample_count += 1
 
@@ -226,28 +261,18 @@ class CorrelationDecoder:
         self,
         sample_rate: float = 1000.0,
         min_confidence: float = 0.5,
+        lpf_cutoff: float = 5.0,
     ):
         self._sample_rate = sample_rate
         self._min_confidence = min_confidence
         self._window_size = int(sample_rate * self.WINDOW_MS / 1000)
 
-        # Build zero-mean templates for each symbol type.
-        # Template structure: LOW during pulse, HIGH during gap.
-        # Each template is normalized to zero mean so dot product with
-        # a zero-mean window measures shape similarity, not amplitude.
+        # Build matched-filter templates: ideal square pulses passed
+        # through the same Butterworth LPF used by the envelope detector.
+        # This ensures templates have the same edge rounding as real data,
+        # maximizing cosine similarity for correct matches.
         self._templates = {}
-        for sym, pulse_ms in [("0", self.PULSE_0_MS),
-                               ("1", self.PULSE_1_MS),
-                               ("M", self.PULSE_M_MS)]:
-            pulse_samples = int(sample_rate * pulse_ms / 1000)
-            gap_samples = self._window_size - pulse_samples
-            t = np.concatenate([
-                np.full(pulse_samples, -1.0),
-                np.full(gap_samples, 1.0),
-            ])
-            # Zero-mean the template itself
-            t = t - np.mean(t)
-            self._templates[sym] = t
+        self._build_matched_templates(sample_rate, lpf_cutoff)
 
         # State
         self._buffer = np.array([], dtype=np.float64)
@@ -260,6 +285,64 @@ class CorrelationDecoder:
         # Stats (match PulseDecoder interface)
         self._pulse_counts: dict[str, int] = {"0": 0, "1": 0, "M": 0, "?": 0}
         self._pulse_sums: dict[str, float] = {"0": 0.0, "1": 0.0, "M": 0.0}
+
+    def _build_matched_templates(
+        self, sample_rate: float, lpf_cutoff: float
+    ) -> None:
+        """Build templates by filtering ideal square pulses through the LPF.
+
+        Uses CAUSAL filtering (sosfilt) to match the real envelope detector
+        pipeline. The envelope detector applies a forward-only Butterworth
+        filter, which introduces phase delay. Templates must have this same
+        delay or the cosine similarity drops significantly (e.g., 0.56
+        instead of 1.0 for a perfect signal at 5 Hz cutoff).
+
+        Multiple copies of the ideal pulse are filtered to let the causal
+        filter reach steady state, then a late copy is extracted.
+        """
+        from scipy.signal import butter, sosfilt
+
+        # Design the same filter as envelope.py but at the decoder's rate
+        nyquist = sample_rate / 2.0
+        if lpf_cutoff >= nyquist:
+            # Filter cutoff above Nyquist: use sharp templates (no filtering)
+            for sym, pulse_ms in [("0", self.PULSE_0_MS),
+                                   ("1", self.PULSE_1_MS),
+                                   ("M", self.PULSE_M_MS)]:
+                pulse_samples = int(sample_rate * pulse_ms / 1000)
+                gap_samples = self._window_size - pulse_samples
+                t = np.concatenate([
+                    np.zeros(pulse_samples),
+                    np.ones(gap_samples),
+                ])
+                t = t - np.mean(t)
+                self._templates[sym] = t
+            return
+
+        sos = butter(4, lpf_cutoff / nyquist, btype="low", output="sos")
+
+        for sym, pulse_ms in [("0", self.PULSE_0_MS),
+                               ("1", self.PULSE_1_MS),
+                               ("M", self.PULSE_M_MS)]:
+            pulse_samples = int(sample_rate * pulse_ms / 1000)
+            gap_samples = self._window_size - pulse_samples
+
+            # Create 5 copies so causal filter reaches steady state,
+            # then extract the 4th copy (well past startup transient)
+            one_sec = np.concatenate([
+                np.zeros(pulse_samples),    # LOW during pulse
+                np.ones(gap_samples),       # HIGH during gap
+            ])
+            padded = np.tile(one_sec, 5)
+            filtered = sosfilt(sos, padded)
+
+            # Extract the 4th second (index 3, past transient)
+            start = 3 * self._window_size
+            t = filtered[start : start + self._window_size]
+
+            # Zero-mean
+            t = t - np.mean(t)
+            self._templates[sym] = t
 
     def process(self, envelope: np.ndarray, sample_rate: float) -> list[Pulse]:
         """Process envelope chunk, return classified pulses.
@@ -317,6 +400,7 @@ class CorrelationDecoder:
                             start_time=start_time,
                             duration_ms=float(self.WINDOW_MS),
                             symbol="M",
+                            confidence=confidence,
                         )
                         pulses.append(pulse)
                         self._update_stats("M")
@@ -330,6 +414,7 @@ class CorrelationDecoder:
                     start_time=start_time,
                     duration_ms=float(self.WINDOW_MS),
                     symbol=symbol,
+                    confidence=confidence,
                 )
                 pulses.append(pulse)
                 self._update_stats(symbol)

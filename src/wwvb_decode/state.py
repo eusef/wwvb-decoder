@@ -42,7 +42,9 @@ class WWVBApp:
         self.config = config
         self.state = AppState.CONNECTING
         self.client = SDRConnectClient(config.host, config.port)
-        self.envelope_detector = EnvelopeDetector()
+        self.envelope_detector = EnvelopeDetector(
+            median_filter_ms=config.median_filter_ms,
+        )
         if config.correlation:
             self.pulse_decoder = CorrelationDecoder(
                 min_confidence=config.min_confidence,
@@ -160,13 +162,14 @@ class WWVBApp:
 
                 results = await self.client.configure_wwvb(
                     freq=self.config.freq,
+                    bandwidth=self.config.bandwidth,
                     antenna=self.config.antenna,
                     if_gain=self.config.if_gain,
                     rf_gain=self.config.rf_gain,
                 )
 
                 config_msg = (
-                    f"Tuned to {self.config.freq} Hz | AM | BW: 100 Hz | AGC: off | Antenna: {self.config.antenna}"
+                    f"Tuned to {self.config.freq} Hz | AM | BW: {self.config.bandwidth} Hz | AGC: off | Antenna: {self.config.antenna}"
                 )
                 if self.config.if_gain is not None:
                     config_msg += f" | IF gain red: {self.config.if_gain}"
@@ -303,18 +306,21 @@ class WWVBApp:
 
                 # Log pulse to file and/or plain display
                 pos = self.assembler.current_position
+                conf_str = f" conf={pulse.confidence:.2f}" if pulse.confidence > 0 else ""
                 self._file_log(
                     "PULSE",
                     f"pos={pos:2d} sym={pulse.symbol} "
                     f"width={pulse.duration_ms:.0f}ms "
-                    f"t={pulse.start_time:.3f}s",
+                    f"t={pulse.start_time:.3f}s{conf_str}",
                 )
                 if self.config.debug and isinstance(self.display, PlainDisplay):
                     self.display.log_debug(
                         f"Pulse: {pulse.duration_ms:.1f}ms -> {pulse.symbol}"
                     )
 
-                event = self.assembler.add_symbol(pulse.symbol)
+                event = self.assembler.add_symbol(
+                    pulse.symbol, pulse.duration_ms
+                )
                 if event:
                     self._handle_frame_event(event)
 

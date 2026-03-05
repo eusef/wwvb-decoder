@@ -1,7 +1,7 @@
 """Envelope detection from audio PCM stream."""
 
 import numpy as np
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfilt, medfilt
 
 import logging
 
@@ -23,9 +23,11 @@ class EnvelopeDetector:
     6. Normalize to 0.0-1.0 using running min/max window
     """
 
-    def __init__(self, sample_rate: int = 48000, lpf_cutoff: float = 5.0):
+    def __init__(self, sample_rate: int = 48000, lpf_cutoff: float = 5.0,
+                 median_filter_ms: int = 0):
         self.sample_rate = sample_rate
         self.lpf_cutoff = lpf_cutoff
+        self.median_filter_ms = median_filter_ms
 
         # Decimation: 48000 -> 1000 Hz = factor of 48
         self.decimation_factor = sample_rate // 1000
@@ -115,6 +117,16 @@ class EnvelopeDetector:
         else:
             normalized = (decimated - self._min_val) / val_range
             normalized = np.clip(normalized, 0.0, 1.0)
+
+        # Optional median filter to remove impulse noise that causes
+        # false rising edges during long pulses (markers especially).
+        # Kernel size in samples = median_filter_ms * effective_rate / 1000.
+        # Must be odd for medfilt.
+        if self.median_filter_ms > 0 and len(normalized) >= 3:
+            kernel = int(self.median_filter_ms * self.effective_rate / 1000)
+            kernel = max(3, kernel | 1)  # Ensure odd and >= 3
+            if kernel <= len(normalized):
+                normalized = medfilt(normalized, kernel_size=kernel)
 
         # Update display buffer
         self._display_buffer = np.roll(self._display_buffer, -len(normalized))

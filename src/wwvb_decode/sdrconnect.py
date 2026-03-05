@@ -270,6 +270,7 @@ class SDRConnectClient:
     async def configure_wwvb(
         self,
         freq: int = 60000,
+        bandwidth: int = 100,
         antenna: str = "Hi-Z",
         if_gain: int | None = None,
         rf_gain: int | None = None,
@@ -301,7 +302,7 @@ class SDRConnectClient:
         await self.set_property("device_center_frequency", freq_str)
         await self.set_property("device_vfo_frequency", freq_str)
         await self.set_property("demodulator", "AM")
-        await self.set_property("filter_bandwidth", "100")
+        await self.set_property("filter_bandwidth", str(bandwidth))
 
         # Disable processing that would distort pulses
         await self.set_property("squelch_enable", "false")

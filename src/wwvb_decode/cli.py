@@ -18,11 +18,13 @@ class Config:
     debug: bool = False
     antenna: str = "Hi-Z"
     freq: int = 60000              # Tuning frequency in Hz
+    bandwidth: int = 100           # RF filter bandwidth in Hz
     if_gain: int | None = None     # IF gain reduction (0-59 for RSPdx)
     rf_gain: int | None = None     # LNA state / RF gain level
     correlation: bool = False      # Use cross-correlation decoder
     min_confidence: float = 0.5    # Minimum confidence for correlation decoder
-    max_errors: int = 8            # Max tolerated errors per frame (0=strict)
+    max_errors: int = 17           # Max tolerated errors per frame (0=strict)
+    median_filter_ms: int = 0      # Median filter window in ms (0=disabled)
     log_file: str | None = None    # Path to write decoder log
 
     @property
@@ -54,6 +56,14 @@ def parse_args(argv: list[str] | None = None) -> Config:
         metavar="HZ",
         help="Tuning frequency in Hz (default: 60000). Adjust if your SDR "
              "oscillator is offset, e.g. --freq 60020.",
+    )
+    parser.add_argument(
+        "--bandwidth",
+        type=int,
+        default=100,
+        metavar="HZ",
+        help="RF filter bandwidth in Hz (default: 100). Narrower = better SNR "
+             "but slower pulse edges. Try 20-50 for weak signals.",
     )
     parser.add_argument(
         "--no-tune",
@@ -132,10 +142,21 @@ def parse_args(argv: list[str] | None = None) -> Config:
     parser.add_argument(
         "--max-errors",
         type=int,
-        default=8,
+        default=17,
         metavar="N",
-        help="Maximum tolerated errors per 60-symbol frame (default: 8). "
-             "Set to 0 for strict mode (all markers must be present).",
+        help="Maximum tolerated errors per 60-symbol frame (default: 17). "
+             "On weak signals, 12+ errors per frame is common due to "
+             "compressed markers and timeout glitches. Set to 0 for strict.",
+    )
+
+    parser.add_argument(
+        "--median-filter",
+        type=int,
+        default=0,
+        metavar="MS",
+        help="Median filter window in ms applied to envelope before "
+             "thresholding. Removes impulse noise that causes false edges. "
+             "Try 50-100 for noisy signals. 0 = disabled (default).",
     )
 
     parser.add_argument(
@@ -156,6 +177,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
         host=args.host,
         port=args.port,
         freq=args.freq,
+        bandwidth=args.bandwidth,
         no_tune=args.no_tune,
         source=args.source,
         threshold=args.threshold,
@@ -168,5 +190,6 @@ def parse_args(argv: list[str] | None = None) -> Config:
         correlation=args.correlation,
         min_confidence=args.min_confidence,
         max_errors=args.max_errors,
+        median_filter_ms=args.median_filter,
         log_file=args.log,
     )

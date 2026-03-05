@@ -270,6 +270,20 @@ class FrameAssembler:
     (positions 59 and 0), then fills a 60-element buffer.
     """
 
+    # Minimum pulse width (ms) to count as a marker during sync.
+    # Higher than the normal M classification boundary (580ms) to prevent
+    # "1" pulses that measure slightly long from triggering false sync.
+    # Set to 620ms: still above the 580ms 1/M boundary but low enough
+    # to catch real markers that measure 620-700ms on weak signals.
+    SYNC_MIN_MARKER_MS = 620.0
+
+    # Maximum consecutive frame errors before losing sync.
+    # On weak signals, frames often fail validation due to compressed
+    # markers and timeout errors, but the sync position is still correct.
+    # Only lose sync after this many consecutive failures, which suggests
+    # the frame boundary itself is wrong.
+    MAX_CONSECUTIVE_ERRORS_BEFORE_RESYNC = 5
+
     def __init__(self, min_frames: int = 2, max_errors: int = 0):
         self._buffer: list[str | None] = [None] * 60
         self._position = 0
@@ -283,34 +297,50 @@ class FrameAssembler:
         self._total_frames = 0
         self._error_frames = 0
         self._consecutive_good = 0
+        self._consecutive_errors = 0  # Track consecutive frame errors
 
-    def add_symbol(self, symbol: str) -> FrameEvent | None:
+    def add_symbol(self, symbol: str, pulse_width_ms: float = 0.0) -> FrameEvent | None:
         """Add a decoded symbol to the frame buffer.
+
+        Args:
+            symbol: Decoded symbol ("0", "1", "M", "?")
+            pulse_width_ms: Measured pulse width in ms (used for sync
+                           quality gating - markers must exceed
+                           SYNC_MIN_MARKER_MS to count for sync).
 
         Returns a FrameEvent if something significant happened.
         """
         if not self._synced:
-            return self._handle_sync(symbol)
+            return self._handle_sync(symbol, pulse_width_ms)
         else:
             return self._handle_decode(symbol)
 
-    def _handle_sync(self, symbol: str) -> FrameEvent | None:
-        """Before sync: look for two consecutive markers."""
-        if symbol == "M":
+    def _handle_sync(self, symbol: str, pulse_width_ms: float) -> FrameEvent | None:
+        """Before sync: look for two consecutive high-quality markers.
+
+        For sync purposes, require markers to exceed SYNC_MIN_MARKER_MS
+        (620ms) rather than the normal M classification boundary (580ms).
+        This prevents "1" pulses that measure slightly long (580-620ms)
+        from triggering false frame sync while still allowing markers
+        that measure 620-700ms on weak signals.
+        """
+        # For sync, require both M classification AND sufficient width
+        is_sync_marker = (
+            symbol == "M" and pulse_width_ms >= self.SYNC_MIN_MARKER_MS
+        )
+
+        if is_sync_marker:
             self._consecutive_markers += 1
             if self._consecutive_markers >= 2:
-                # Found double marker = frame boundary
-                # The NEXT symbol will be position 0 of a new frame
                 self._synced = True
                 self._position = 0
                 self._buffer = [None] * 60
-                # Position 0 is also a marker (the second M we just saw
-                # is both sec:59 of old frame and we treat next as sec:0)
-                # Actually: the two consecutive M are sec:59 M and sec:0 M.
-                # So the LAST M we saw is sec:0. Place it.
                 self._buffer[0] = "M"
                 self._position = 1
-                logger.info("Frame sync acquired")
+                logger.info(
+                    f"Frame sync acquired "
+                    f"(marker width {pulse_width_ms:.0f}ms)"
+                )
                 return FrameEvent(
                     event_type=FrameEventType.SYNC_ACQUIRED,
                     message="Frame sync acquired",
@@ -319,7 +349,10 @@ class FrameAssembler:
             else:
                 return FrameEvent(
                     event_type=FrameEventType.SYNC_PROGRESS,
-                    message=f"Found {self._consecutive_markers} of 2 consecutive markers",
+                    message=(
+                        f"Found {self._consecutive_markers} of 2 "
+                        f"consecutive markers ({pulse_width_ms:.0f}ms)"
+                    ),
                     position=0,
                 )
         else:
@@ -329,7 +362,6 @@ class FrameAssembler:
     def _handle_decode(self, symbol: str) -> FrameEvent | None:
         """After sync: fill frame buffer and parse when complete."""
         if self._position >= 60:
-            # Shouldn't happen, but protect
             self._position = 0
             self._buffer = [None] * 60
 
@@ -337,8 +369,38 @@ class FrameAssembler:
         current_pos = self._position
         self._position += 1
 
+        # Post-sync validation: after receiving position 9, check for
+        # expected marker. If position 9 is not M, the sync was likely
+        # false (locked onto a noise-generated M pair). Resync.
+        if current_pos == 9 and symbol != "M":
+            # Also check if position 0 has an M (it should from sync)
+            # and no other marker appeared in positions 1-8
+            non_markers_1_8 = sum(
+                1 for i in range(1, 9) if self._buffer[i] == "M"
+            )
+            if non_markers_1_8 >= 3:
+                # Many unexpected markers in positions 1-8 strongly
+                # suggests misalignment (raised from 2 to 3 since weak
+                # signals cause frequent M misclassification)
+                logger.warning(
+                    f"Post-sync check failed: pos 9 is '{symbol}' "
+                    f"(expected M), and {non_markers_1_8} unexpected M's "
+                    f"in positions 1-8. Resyncing."
+                )
+                self._synced = False
+                self._consecutive_markers = 0
+                self._position = 0
+                self._buffer = [None] * 60
+                return FrameEvent(
+                    event_type=FrameEventType.FRAME_ERROR,
+                    message=(
+                        f"Sync validation failed: position 9 is "
+                        f"'{symbol}', not marker. Resyncing."
+                    ),
+                    position=current_pos,
+                )
+
         if self._position < 60:
-            # Frame not complete yet
             return FrameEvent(
                 event_type=FrameEventType.SYMBOL_ADDED,
                 position=current_pos,
@@ -355,22 +417,22 @@ class FrameAssembler:
         if error:
             self._error_frames += 1
             self._consecutive_good = 0
+            self._consecutive_errors += 1
             logger.warning(f"Frame error: {error}")
 
-            # Only lose sync if errors are overwhelming (> 2x tolerance)
-            # With error tolerance, occasional marker misses are expected
-            if "Too many errors" in error and self._max_errors > 0:
-                # Parse error count from message
-                try:
-                    err_count = int(error.split("(")[1].split(")")[0])
-                    if err_count > self._max_errors * 2:
-                        self._synced = False
-                        self._consecutive_markers = 0
-                except (IndexError, ValueError):
-                    pass
-            elif "marker" in error.lower() and self._max_errors == 0:
+            # Don't immediately lose sync on frame errors. On weak signals,
+            # the sync position is usually correct even when frames fail
+            # validation (compressed markers, timeout errors). Only lose
+            # sync after MAX_CONSECUTIVE_ERRORS_BEFORE_RESYNC failures,
+            # which suggests the frame boundary itself is wrong.
+            if self._consecutive_errors >= self.MAX_CONSECUTIVE_ERRORS_BEFORE_RESYNC:
+                logger.warning(
+                    f"{self._consecutive_errors} consecutive frame errors. "
+                    "Losing sync to try a new alignment."
+                )
                 self._synced = False
                 self._consecutive_markers = 0
+                self._consecutive_errors = 0
 
             return FrameEvent(
                 event_type=FrameEventType.FRAME_ERROR,
@@ -380,6 +442,7 @@ class FrameAssembler:
 
         # Valid frame
         self._consecutive_good += 1
+        self._consecutive_errors = 0
         self._last_decoded = decoded_time
 
         # Multi-frame validation
@@ -450,5 +513,6 @@ class FrameAssembler:
         """Reset synchronization state."""
         self._synced = False
         self._consecutive_markers = 0
+        self._consecutive_errors = 0
         self._position = 0
         self._buffer = [None] * 60
