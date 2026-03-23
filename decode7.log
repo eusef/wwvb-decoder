@@ -1,0 +1,470 @@
+2026-03-05 01:36:50.825 CONNECT  Connecting to ws://127.0.0.1:5454
+2026-03-05 01:36:50.851 CONNECT  Connected to ws://127.0.0.1:5454
+2026-03-05 01:36:50.851 CONFIG   Configuring radio for WWVB 60 kHz reception
+2026-03-05 01:36:51.355 CONFIG   Tuned to 60020 Hz | AM | BW: 100 Hz | AGC: off | Antenna: Hi-Z
+2026-03-05 01:36:51.355 STREAM   Enabling audio stream...
+2026-03-05 01:36:51.355 STREAM   Audio stream enabled. Waiting for data...
+2026-03-05 01:36:51.358 SIGNAL   power=-113.2dBm snr=13.3dB
+2026-03-05 01:36:51.447 SYNC     Audio data received. Searching for frame sync...
+2026-03-05 01:36:51.538 PULSE    pos= 0 sym=0 width=80ms t=0.000s
+2026-03-05 01:36:53.184 PULSE    pos= 0 sym=1 width=576ms t=1.188s
+2026-03-05 01:36:53.362 SIGNAL   power=-108.0dBm snr=18.9dB
+2026-03-05 01:36:54.086 PULSE    pos= 0 sym=1 width=524ms t=2.133s
+2026-03-05 01:36:54.992 PULSE    pos= 0 sym=1 width=522ms t=3.078s
+2026-03-05 01:36:55.364 SIGNAL   power=-102.9dBm snr=23.7dB
+2026-03-05 01:36:56.025 PULSE    pos= 0 sym=1 width=499ms t=4.134s
+2026-03-05 01:36:56.832 PULSE    pos= 0 sym=1 width=463ms t=5.034s
+2026-03-05 01:36:57.368 SIGNAL   power=-106.7dBm snr=19.9dB
+2026-03-05 01:36:57.833 PULSE    pos= 0 sym=M width=586ms t=5.934s
+2026-03-05 01:36:58.896 PULSE    pos= 0 sym=1 width=397ms t=7.104s
+2026-03-05 01:36:59.373 SIGNAL   power=-107.9dBm snr=18.6dB
+2026-03-05 01:36:59.801 PULSE    pos= 0 sym=1 width=457ms t=8.029s
+2026-03-05 01:37:00.892 PULSE    pos= 0 sym=M width=583ms t=8.929s
+2026-03-05 01:37:01.376 SIGNAL   power=-110.1dBm snr=16.3dB
+2026-03-05 01:37:01.741 PULSE    pos= 0 sym=1 width=543ms t=9.924s
+2026-03-05 01:37:02.646 PULSE    pos= 0 sym=1 width=551ms t=10.868s
+2026-03-05 01:37:03.381 SIGNAL   power=-112.0dBm snr=14.6dB
+2026-03-05 01:37:03.762 PULSE    pos= 0 sym=M width=672ms t=11.768s
+2026-03-05 01:37:04.486 PULSE    pos= 0 sym=1 width=572ms t=12.668s
+2026-03-05 01:37:05.383 SIGNAL   power=-118.5dBm snr=8.0dB
+2026-03-05 01:37:05.508 PULSE    pos= 0 sym=M width=663ms t=13.568s
+2026-03-05 01:37:06.508 PULSE    pos= 0 sym=M width=640ms t=14.564s
+2026-03-05 01:37:07.386 SIGNAL   power=-114.0dBm snr=12.3dB
+2026-03-05 01:37:07.474 PULSE    pos= 0 sym=M width=725ms t=15.510s
+2026-03-05 01:37:07.474 SYNC     Found 1 of 2 consecutive markers (725ms)
+2026-03-05 01:37:08.448 PULSE    pos= 0 sym=M width=835ms t=16.419s
+2026-03-05 01:37:08.448 SYNC     Frame sync acquired
+2026-03-05 01:37:09.251 PULSE    pos= 1 sym=M width=619ms t=17.454s
+2026-03-05 01:37:09.389 SIGNAL   power=-107.4dBm snr=19.1dB
+2026-03-05 01:37:10.701 PULSE    pos= 2 sym=? width=1101ms t=18.503s
+2026-03-05 01:37:11.114 PULSE    pos= 3 sym=0 width=294ms t=19.605s
+2026-03-05 01:37:11.392 SIGNAL   power=-107.0dBm snr=19.6dB
+2026-03-05 01:37:12.016 PULSE    pos= 4 sym=1 width=400ms t=20.505s
+2026-03-05 01:37:12.859 PULSE    pos= 5 sym=1 width=350ms t=21.405s
+2026-03-05 01:37:13.395 SIGNAL   power=-111.3dBm snr=15.2dB
+2026-03-05 01:37:13.959 PULSE    pos= 6 sym=1 width=440ms t=22.415s
+2026-03-05 01:37:14.957 PULSE    pos= 7 sym=1 width=551ms t=23.315s
+2026-03-05 01:37:15.400 SIGNAL   power=-111.3dBm snr=15.0dB
+2026-03-05 01:37:15.709 PULSE    pos= 8 sym=1 width=421ms t=24.245s
+2026-03-05 01:37:16.731 PULSE    pos= 9 sym=1 width=443ms t=25.178s
+2026-03-05 01:37:17.404 SIGNAL   power=-111.2dBm snr=15.5dB
+2026-03-05 01:37:17.769 PULSE    pos=10 sym=1 width=543ms t=26.197s
+2026-03-05 01:37:18.768 PULSE    pos=11 sym=M width=619ms t=27.097s
+2026-03-05 01:37:19.408 SIGNAL   power=-114.4dBm snr=12.4dB
+2026-03-05 01:37:19.467 PULSE    pos=12 sym=1 width=431ms t=27.997s
+2026-03-05 01:37:20.608 PULSE    pos=13 sym=M width=701ms t=28.897s
+2026-03-05 01:37:21.407 PULSE    pos=14 sym=M width=653ms t=29.832s
+2026-03-05 01:37:21.410 SIGNAL   power=-111.6dBm snr=15.3dB
+2026-03-05 01:37:22.213 PULSE    pos=15 sym=1 width=556ms t=30.732s
+2026-03-05 01:37:23.213 PULSE    pos=16 sym=1 width=556ms t=31.642s
+2026-03-05 01:37:23.414 SIGNAL   power=-107.7dBm snr=19.1dB
+2026-03-05 01:37:23.767 PULSE    pos=17 sym=1 width=350ms t=32.545s
+2026-03-05 01:37:25.180 PULSE    pos=18 sym=1 width=549ms t=33.626s
+2026-03-05 01:37:25.416 SIGNAL   power=-110.2dBm snr=16.6dB
+2026-03-05 01:37:25.984 PULSE    pos=19 sym=1 width=489ms t=34.526s
+2026-03-05 01:37:27.022 PULSE    pos=20 sym=M width=667ms t=35.479s
+2026-03-05 01:37:27.419 SIGNAL   power=-113.0dBm snr=13.5dB
+2026-03-05 01:37:28.220 PULSE    pos=21 sym=? width=1101ms t=36.379s
+2026-03-05 01:37:28.507 PULSE    pos=22 sym=0 width=159ms t=37.481s
+2026-03-05 01:37:29.421 SIGNAL   power=-115.8dBm snr=10.9dB
+2026-03-05 01:37:29.773 PULSE    pos=23 sym=1 width=545ms t=38.381s
+2026-03-05 01:37:30.678 PULSE    pos=24 sym=1 width=578ms t=39.281s
+2026-03-05 01:37:31.424 SIGNAL   power=-111.9dBm snr=15.0dB
+2026-03-05 01:37:31.634 PULSE    pos=25 sym=1 width=557ms t=40.289s
+2026-03-05 01:37:32.534 PULSE    pos=26 sym=1 width=566ms t=41.189s
+2026-03-05 01:37:33.427 SIGNAL   power=-110.1dBm snr=16.6dB
+2026-03-05 01:37:33.533 PULSE    pos=27 sym=M width=585ms t=42.136s
+2026-03-05 01:37:34.472 PULSE    pos=28 sym=M width=595ms t=43.071s
+2026-03-05 01:37:35.379 PULSE    pos=29 sym=1 width=507ms t=44.157s
+2026-03-05 01:37:35.430 SIGNAL   power=-110.6dBm snr=16.1dB
+2026-03-05 01:37:36.380 PULSE    pos=30 sym=1 width=561ms t=45.057s
+2026-03-05 01:37:37.146 PULSE    pos=31 sym=1 width=479ms t=45.981s
+2026-03-05 01:37:37.434 SIGNAL   power=-106.1dBm snr=20.4dB
+2026-03-05 01:37:38.222 PULSE    pos=32 sym=1 width=506ms t=47.057s
+2026-03-05 01:37:38.737 PULSE    pos=33 sym=0 width=81ms t=47.957s
+2026-03-05 01:37:39.438 SIGNAL   power=-110.4dBm snr=16.3dB
+2026-03-05 01:37:40.587 PULSE    pos=34 sym=? width=1101ms t=48.949s
+2026-03-05 01:37:41.442 SIGNAL   power=-110.6dBm snr=16.2dB
+2026-03-05 01:37:41.793 PULSE    pos=35 sym=? width=1101ms t=50.054s
+2026-03-05 01:37:42.536 PULSE    pos=36 sym=M width=727ms t=51.156s
+2026-03-05 01:37:43.250 PULSE    pos=37 sym=1 width=523ms t=52.153s
+2026-03-05 01:37:43.444 SIGNAL   power=-108.4dBm snr=18.0dB
+2026-03-05 01:37:43.736 PULSE    pos=38 sym=0 width=137ms t=53.053s
+2026-03-05 01:37:45.282 PULSE    pos=39 sym=1 width=508ms t=54.178s
+2026-03-05 01:37:45.452 SIGNAL   power=-107.3dBm snr=19.4dB
+2026-03-05 01:37:46.092 PULSE    pos=40 sym=1 width=357ms t=55.228s
+2026-03-05 01:37:47.196 PULSE    pos=41 sym=1 width=462ms t=56.193s
+2026-03-05 01:37:47.455 SIGNAL   power=-107.5dBm snr=19.3dB
+2026-03-05 01:37:47.957 PULSE    pos=42 sym=0 width=126ms t=57.301s
+2026-03-05 01:37:49.032 PULSE    pos=43 sym=0 width=299ms t=58.201s
+2026-03-05 01:37:49.458 SIGNAL   power=-113.3dBm snr=13.4dB
+2026-03-05 01:37:49.837 PULSE    pos=44 sym=0 width=253ms t=59.112s
+2026-03-05 01:37:50.900 PULSE    pos=45 sym=1 width=382ms t=60.064s
+2026-03-05 01:37:51.462 SIGNAL   power=-107.4dBm snr=19.3dB
+2026-03-05 01:37:51.988 PULSE    pos=46 sym=1 width=465ms t=61.011s
+2026-03-05 01:37:52.892 PULSE    pos=47 sym=1 width=406ms t=61.991s
+2026-03-05 01:37:53.468 SIGNAL   power=-111.1dBm snr=15.6dB
+2026-03-05 01:37:53.958 PULSE    pos=48 sym=M width=651ms t=62.891s
+2026-03-05 01:37:54.865 PULSE    pos=49 sym=1 width=553ms t=63.896s
+2026-03-05 01:37:55.470 SIGNAL   power=-116.8dBm snr=9.9dB
+2026-03-05 01:37:55.863 PULSE    pos=50 sym=M width=656ms t=64.796s
+2026-03-05 01:37:56.802 PULSE    pos=51 sym=M width=614ms t=65.794s
+2026-03-05 01:37:57.474 SIGNAL   power=-114.3dBm snr=12.7dB
+2026-03-05 01:37:58.186 PULSE    pos=52 sym=? width=1101ms t=66.802s
+2026-03-05 01:37:59.251 PULSE    pos=53 sym=? width=990ms t=67.904s
+2026-03-05 01:37:59.477 SIGNAL   power=-112.8dBm snr=13.8dB
+2026-03-05 01:38:00.154 PULSE    pos=54 sym=M width=737ms t=69.039s
+2026-03-05 01:38:01.158 PULSE    pos=55 sym=M width=709ms t=70.091s
+2026-03-05 01:38:01.479 SIGNAL   power=-111.9dBm snr=14.9dB
+2026-03-05 01:38:01.897 PULSE    pos=56 sym=1 width=552ms t=71.008s
+2026-03-05 01:38:03.211 PULSE    pos=57 sym=? width=1101ms t=71.908s
+2026-03-05 01:38:03.484 SIGNAL   power=-114.1dBm snr=12.4dB
+2026-03-05 01:38:03.900 PULSE    pos=58 sym=1 width=552ms t=73.010s
+2026-03-05 01:38:04.762 PULSE    pos=59 sym=M width=580ms t=73.910s
+2026-03-05 01:38:04.764 ERROR    Frame error: Too many errors (12): missing markers at [49, 19, 39, 9, 29]
+2026-03-05 01:38:04.765 SYNC     Sync lost. Resyncing...
+2026-03-05 01:38:05.487 SIGNAL   power=-111.5dBm snr=15.3dB
+2026-03-05 01:38:05.666 PULSE    pos= 0 sym=M width=654ms t=74.810s
+2026-03-05 01:38:06.252 PULSE    pos= 0 sym=0 width=162ms t=75.820s
+2026-03-05 01:38:07.492 SIGNAL   power=-111.2dBm snr=15.3dB
+2026-03-05 01:38:07.620 PULSE    pos= 0 sym=M width=741ms t=76.720s
+2026-03-05 01:38:07.620 SYNC     Found 1 of 2 consecutive markers (741ms)
+2026-03-05 01:38:08.604 PULSE    pos= 0 sym=M width=720ms t=77.708s
+2026-03-05 01:38:08.605 SYNC     Frame sync acquired
+2026-03-05 01:38:08.901 PULSE    pos= 1 sym=0 width=113ms t=78.608s
+2026-03-05 01:38:09.496 SIGNAL   power=-113.4dBm snr=13.1dB
+2026-03-05 01:38:10.468 PULSE    pos= 2 sym=1 width=517ms t=79.785s
+2026-03-05 01:38:11.369 PULSE    pos= 3 sym=1 width=499ms t=80.685s
+2026-03-05 01:38:11.499 SIGNAL   power=-111.1dBm snr=15.6dB
+2026-03-05 01:38:12.262 PULSE    pos= 4 sym=1 width=501ms t=81.641s
+2026-03-05 01:38:12.816 PULSE    pos= 5 sym=0 width=165ms t=82.541s
+2026-03-05 01:38:13.502 SIGNAL   power=-110.2dBm snr=16.7dB
+2026-03-05 01:38:14.517 GAPFILL  pos= 6 sym=? (missed pulse)
+2026-03-05 01:38:14.517 PULSE    pos= 7 sym=0 width=61ms t=84.341s
+2026-03-05 01:38:15.472 PULSE    pos= 8 sym=0 width=121ms t=85.241s
+2026-03-05 01:38:15.504 SIGNAL   power=-106.5dBm snr=20.2dB
+2026-03-05 01:38:16.467 PULSE    pos= 9 sym=0 width=287ms t=86.141s
+2026-03-05 01:38:17.508 SIGNAL   power=-107.3dBm snr=18.9dB
+2026-03-05 01:38:17.569 PULSE    pos=10 sym=1 width=428ms t=87.041s
+2026-03-05 01:38:18.317 PULSE    pos=11 sym=0 width=302ms t=87.941s
+2026-03-05 01:38:19.223 PULSE    pos=12 sym=1 width=403ms t=88.841s
+2026-03-05 01:38:19.511 SIGNAL   power=-108.9dBm snr=17.8dB
+2026-03-05 01:38:20.221 PULSE    pos=13 sym=1 width=448ms t=89.754s
+2026-03-05 01:38:21.278 PULSE    pos=14 sym=1 width=503ms t=90.760s
+2026-03-05 01:38:21.514 SIGNAL   power=-107.6dBm snr=19.3dB
+2026-03-05 01:38:22.191 PULSE    pos=15 sym=1 width=527ms t=91.715s
+2026-03-05 01:38:23.182 PULSE    pos=16 sym=M width=604ms t=92.615s
+2026-03-05 01:38:23.517 SIGNAL   power=-107.0dBm snr=19.6dB
+2026-03-05 01:38:24.119 PULSE    pos=17 sym=0 width=320ms t=93.835s
+2026-03-05 01:38:25.340 PULSE    pos=18 sym=1 width=539ms t=94.787s
+2026-03-05 01:38:25.521 SIGNAL   power=-108.5dBm snr=18.3dB
+2026-03-05 01:38:26.027 PULSE    pos=19 sym=1 width=412ms t=95.687s
+2026-03-05 01:38:27.275 PULSE    pos=20 sym=1 width=568ms t=96.828s
+2026-03-05 01:38:27.525 SIGNAL   power=-115.0dBm snr=11.0dB
+2026-03-05 01:38:27.996 PULSE    pos=21 sym=1 width=337ms t=97.728s
+2026-03-05 01:38:29.093 PULSE    pos=22 sym=M width=610ms t=98.628s
+2026-03-05 01:38:29.529 SIGNAL   power=-115.6dBm snr=10.3dB
+2026-03-05 01:38:30.219 PULSE    pos=23 sym=M width=720ms t=99.607s
+2026-03-05 01:38:31.123 PULSE    pos=24 sym=M width=633ms t=100.616s
+2026-03-05 01:38:31.537 SIGNAL   power=-116.9dBm snr=9.8dB
+2026-03-05 01:38:32.400 PULSE    pos=25 sym=? width=1101ms t=101.537s
+2026-03-05 01:38:32.576 PULSE    pos=26 sym=0 width=161ms t=102.639s
+2026-03-05 01:38:33.540 SIGNAL   power=-108.8dBm snr=17.6dB
+2026-03-05 01:38:33.888 PULSE    pos=27 sym=1 width=555ms t=103.539s
+2026-03-05 01:38:35.246 PULSE    pos=28 sym=? width=1101ms t=104.441s
+2026-03-05 01:38:35.543 SIGNAL   power=-110.6dBm snr=16.0dB
+2026-03-05 01:38:35.739 PULSE    pos=29 sym=1 width=468ms t=105.543s
+2026-03-05 01:38:36.531 PULSE    pos=30 sym=1 width=394ms t=106.443s
+2026-03-05 01:38:37.346 PULSE    pos=31 sym=0 width=193ms t=107.343s
+2026-03-05 01:38:37.549 SIGNAL   power=-111.0dBm snr=15.7dB
+2026-03-05 01:38:38.504 PULSE    pos=32 sym=1 width=507ms t=108.317s
+2026-03-05 01:38:39.403 PULSE    pos=33 sym=1 width=491ms t=109.228s
+2026-03-05 01:38:39.553 SIGNAL   power=-105.7dBm snr=20.8dB
+2026-03-05 01:38:40.242 PULSE    pos=34 sym=0 width=327ms t=110.204s
+2026-03-05 01:38:41.245 PULSE    pos=35 sym=1 width=428ms t=111.167s
+2026-03-05 01:38:41.556 SIGNAL   power=-104.5dBm snr=22.3dB
+2026-03-05 01:38:42.346 PULSE    pos=36 sym=1 width=492ms t=112.156s
+2026-03-05 01:38:43.188 PULSE    pos=37 sym=1 width=548ms t=113.072s
+2026-03-05 01:38:43.560 SIGNAL   power=-107.9dBm snr=18.7dB
+2026-03-05 01:38:44.282 PULSE    pos=38 sym=M width=643ms t=114.030s
+2026-03-05 01:38:45.190 PULSE    pos=39 sym=1 width=520ms t=115.078s
+2026-03-05 01:38:45.563 SIGNAL   power=-113.2dBm snr=13.5dB
+2026-03-05 01:38:46.048 PULSE    pos=40 sym=1 width=511ms t=115.978s
+2026-03-05 01:38:47.146 PULSE    pos=41 sym=1 width=433ms t=117.085s
+2026-03-05 01:38:47.565 SIGNAL   power=-114.7dBm snr=12.2dB
+2026-03-05 01:38:47.953 PULSE    pos=42 sym=1 width=368ms t=118.055s
+2026-03-05 01:38:49.311 PULSE    pos=43 sym=M width=641ms t=119.059s
+2026-03-05 01:38:49.569 SIGNAL   power=-115.8dBm snr=11.0dB
+2026-03-05 01:38:50.286 PULSE    pos=44 sym=M width=762ms t=119.959s
+2026-03-05 01:38:51.045 PULSE    pos=45 sym=1 width=571ms t=120.981s
+2026-03-05 01:38:51.571 SIGNAL   power=-111.8dBm snr=15.0dB
+2026-03-05 01:38:51.950 PULSE    pos=46 sym=1 width=532ms t=121.905s
+2026-03-05 01:38:53.051 PULSE    pos=47 sym=M width=608ms t=122.974s
+2026-03-05 01:38:53.574 SIGNAL   power=-114.7dBm snr=11.9dB
+2026-03-05 01:38:53.758 PULSE    pos=48 sym=1 width=451ms t=123.874s
+2026-03-05 01:38:55.013 PULSE    pos=49 sym=M width=739ms t=124.794s
+2026-03-05 01:38:55.577 SIGNAL   power=-111.7dBm snr=14.9dB
+2026-03-05 01:38:55.796 PULSE    pos=50 sym=M width=644ms t=125.756s
+2026-03-05 01:38:56.950 PULSE    pos=51 sym=M width=842ms t=126.676s
+2026-03-05 01:38:57.579 SIGNAL   power=-113.9dBm snr=12.6dB
+2026-03-05 01:38:58.147 PULSE    pos=52 sym=? width=1101ms t=127.738s
+2026-03-05 01:38:59.311 PULSE    pos=53 sym=? width=1101ms t=128.978s
+2026-03-05 01:38:59.583 SIGNAL   power=-112.0dBm snr=14.7dB
+2026-03-05 01:39:00.412 PULSE    pos=54 sym=M width=919ms t=130.173s
+2026-03-05 01:39:01.412 PULSE    pos=55 sym=M width=621ms t=131.442s
+2026-03-05 01:39:01.586 SIGNAL   power=-107.1dBm snr=19.7dB
+2026-03-05 01:39:02.074 PULSE    pos=56 sym=0 width=251ms t=132.494s
+2026-03-05 01:39:03.378 PULSE    pos=57 sym=M width=599ms t=133.453s
+2026-03-05 01:39:03.589 SIGNAL   power=-106.8dBm snr=19.7dB
+2026-03-05 01:39:04.275 PULSE    pos=58 sym=1 width=404ms t=134.556s
+2026-03-05 01:39:05.210 PULSE    pos=59 sym=0 width=313ms t=135.646s
+2026-03-05 01:39:05.211 ERROR    Frame error: Too many errors (9): missing markers at [19, 39, 9, 29]
+2026-03-05 01:39:05.211 SYNC     Sync lost. Resyncing...
+2026-03-05 01:39:05.592 SIGNAL   power=-109.1dBm snr=17.3dB
+2026-03-05 01:39:06.311 PULSE    pos= 0 sym=1 width=474ms t=136.546s
+2026-03-05 01:39:07.216 PULSE    pos= 0 sym=1 width=497ms t=137.446s
+2026-03-05 01:39:07.599 SIGNAL   power=-107.7dBm snr=18.9dB
+2026-03-05 01:39:08.172 PULSE    pos= 0 sym=1 width=470ms t=138.477s
+2026-03-05 01:39:09.084 PULSE    pos= 0 sym=1 width=427ms t=139.377s
+2026-03-05 01:39:09.604 SIGNAL   power=-115.7dBm snr=11.1dB
+2026-03-05 01:39:10.075 PULSE    pos= 0 sym=1 width=481ms t=140.355s
+2026-03-05 01:39:11.210 PULSE    pos= 0 sym=M width=585ms t=141.437s
+2026-03-05 01:39:11.606 SIGNAL   power=-111.3dBm snr=15.3dB
+2026-03-05 01:39:12.018 PULSE    pos= 0 sym=1 width=462ms t=142.350s
+2026-03-05 01:39:13.016 PULSE    pos= 0 sym=1 width=549ms t=143.360s
+2026-03-05 01:39:13.609 SIGNAL   power=-114.4dBm snr=12.2dB
+2026-03-05 01:39:14.171 PULSE    pos= 0 sym=M width=785ms t=144.260s
+2026-03-05 01:39:14.171 SYNC     Found 1 of 2 consecutive markers (785ms)
+2026-03-05 01:39:14.980 PULSE    pos= 0 sym=M width=594ms t=145.313s
+2026-03-05 01:39:15.613 SIGNAL   power=-117.0dBm snr=9.6dB
+2026-03-05 01:39:15.923 PULSE    pos= 0 sym=M width=641ms t=146.213s
+2026-03-05 01:39:16.213 PULSE    pos= 0 sym=0 width=60ms t=147.113s
+2026-03-05 01:39:17.616 SIGNAL   power=-106.9dBm snr=19.6dB
+2026-03-05 01:39:17.731 PULSE    pos= 0 sym=M width=650ms t=148.020s
+2026-03-05 01:39:18.890 PULSE    pos= 0 sym=M width=923ms t=148.944s
+2026-03-05 01:39:18.890 SYNC     Found 1 of 2 consecutive markers (923ms)
+2026-03-05 01:39:19.574 PULSE    pos= 0 sym=M width=597ms t=149.997s
+2026-03-05 01:39:19.620 SIGNAL   power=-108.0dBm snr=18.5dB
+2026-03-05 01:39:20.790 PULSE    pos= 0 sym=M width=830ms t=150.897s
+2026-03-05 01:39:20.791 SYNC     Found 1 of 2 consecutive markers (830ms)
+2026-03-05 01:39:21.624 SIGNAL   power=-115.2dBm snr=11.5dB
+2026-03-05 01:39:21.829 PULSE    pos= 0 sym=? width=1101ms t=151.898s
+2026-03-05 01:39:22.240 PULSE    pos= 0 sym=0 width=232ms t=153.000s
+2026-03-05 01:39:23.442 PULSE    pos= 0 sym=1 width=485ms t=153.900s
+2026-03-05 01:39:23.627 SIGNAL   power=-113.2dBm snr=13.5dB
+2026-03-05 01:39:24.282 PULSE    pos= 0 sym=1 width=558ms t=154.800s
+2026-03-05 01:39:25.297 PULSE    pos= 0 sym=1 width=564ms t=155.721s
+2026-03-05 01:39:25.631 SIGNAL   power=-113.4dBm snr=13.2dB
+2026-03-05 01:39:26.085 PULSE    pos= 0 sym=1 width=514ms t=156.621s
+2026-03-05 01:39:27.136 PULSE    pos= 0 sym=1 width=558ms t=157.656s
+2026-03-05 01:39:27.542 PULSE    pos= 0 sym=0 width=99ms t=158.556s
+2026-03-05 01:39:27.634 SIGNAL   power=-110.8dBm snr=15.7dB
+2026-03-05 01:39:29.140 PULSE    pos= 0 sym=1 width=337ms t=159.857s
+2026-03-05 01:39:29.637 SIGNAL   power=-122.7dBm snr=3.7dB
+2026-03-05 01:39:29.981 PULSE    pos= 0 sym=1 width=359ms t=160.757s
+2026-03-05 01:39:30.985 PULSE    pos= 0 sym=1 width=373ms t=161.759s
+2026-03-05 01:39:31.641 SIGNAL   power=-109.7dBm snr=17.0dB
+2026-03-05 01:39:31.791 PULSE    pos= 0 sym=0 width=285ms t=162.703s
+2026-03-05 01:39:32.953 PULSE    pos= 0 sym=1 width=494ms t=163.622s
+2026-03-05 01:39:33.647 SIGNAL   power=-112.8dBm snr=13.3dB
+2026-03-05 01:39:33.949 PULSE    pos= 0 sym=M width=597ms t=164.573s
+2026-03-05 01:39:35.274 PULSE    pos= 0 sym=M width=937ms t=165.541s
+2026-03-05 01:39:35.274 SYNC     Found 1 of 2 consecutive markers (937ms)
+2026-03-05 01:39:35.651 SIGNAL   power=-115.8dBm snr=10.6dB
+2026-03-05 01:39:36.499 PULSE    pos= 0 sym=? width=1101ms t=166.705s
+2026-03-05 01:39:37.609 PULSE    pos= 0 sym=? width=1101ms t=167.807s
+2026-03-05 01:39:37.654 SIGNAL   power=-110.1dBm snr=16.5dB
+2026-03-05 01:39:38.657 PULSE    pos= 0 sym=? width=1101ms t=168.909s
+2026-03-05 01:39:39.240 PULSE    pos= 0 sym=1 width=493ms t=170.011s
+2026-03-05 01:39:39.659 SIGNAL   power=-112.2dBm snr=14.5dB
+2026-03-05 01:39:39.951 PULSE    pos= 0 sym=1 width=338ms t=170.911s
+2026-03-05 01:39:40.796 PULSE    pos= 0 sym=0 width=321ms t=171.811s
+2026-03-05 01:39:41.601 PULSE    pos= 0 sym=0 width=282ms t=172.711s
+2026-03-05 01:39:41.662 SIGNAL   power=-110.1dBm snr=16.5dB
+2026-03-05 01:39:42.797 PULSE    pos= 0 sym=1 width=539ms t=173.611s
+2026-03-05 01:39:43.460 PULSE    pos= 0 sym=0 width=192ms t=174.686s
+2026-03-05 01:39:43.665 SIGNAL   power=-113.6dBm snr=12.9dB
+2026-03-05 01:39:44.361 PULSE    pos= 0 sym=0 width=67ms t=175.672s
+2026-03-05 01:39:45.560 PULSE    pos= 0 sym=0 width=326ms t=176.572s
+2026-03-05 01:39:45.666 SIGNAL   power=-115.5dBm snr=11.3dB
+2026-03-05 01:39:46.311 PULSE    pos= 0 sym=0 width=282ms t=177.482s
+2026-03-05 01:39:47.406 PULSE    pos= 0 sym=1 width=466ms t=178.382s
+2026-03-05 01:39:47.670 SIGNAL   power=-117.2dBm snr=9.2dB
+2026-03-05 01:39:48.113 PULSE    pos= 0 sym=0 width=240ms t=179.282s
+2026-03-05 01:39:49.051 PULSE    pos= 0 sym=1 width=330ms t=180.246s
+2026-03-05 01:39:49.672 SIGNAL   power=-115.5dBm snr=11.2dB
+2026-03-05 01:39:50.148 PULSE    pos= 0 sym=1 width=433ms t=181.146s
+2026-03-05 01:39:51.054 PULSE    pos= 0 sym=1 width=435ms t=182.112s
+2026-03-05 01:39:51.677 SIGNAL   power=-115.2dBm snr=11.5dB
+2026-03-05 01:39:52.016 PULSE    pos= 0 sym=1 width=437ms t=183.012s
+2026-03-05 01:39:53.306 PULSE    pos= 0 sym=M width=669ms t=184.173s
+2026-03-05 01:39:53.680 SIGNAL   power=-113.2dBm snr=13.3dB
+2026-03-05 01:39:54.271 PULSE    pos= 0 sym=M width=735ms t=185.082s
+2026-03-05 01:39:54.271 SYNC     Found 1 of 2 consecutive markers (735ms)
+2026-03-05 01:39:55.458 PULSE    pos= 0 sym=? width=1101ms t=185.982s
+2026-03-05 01:39:55.684 SIGNAL   power=-108.4dBm snr=18.5dB
+2026-03-05 01:39:55.764 PULSE    pos= 0 sym=0 width=208ms t=187.084s
+2026-03-05 01:39:57.213 PULSE    pos= 0 sym=M width=854ms t=187.984s
+2026-03-05 01:39:57.214 SYNC     Found 1 of 2 consecutive markers (854ms)
+2026-03-05 01:39:57.687 SIGNAL   power=-114.8dBm snr=11.9dB
+2026-03-05 01:39:58.025 PULSE    pos= 0 sym=M width=618ms t=189.044s
+2026-03-05 01:39:59.307 PULSE    pos= 0 sym=M width=622ms t=190.269s
+2026-03-05 01:39:59.689 SIGNAL   power=-109.1dBm snr=17.5dB
+2026-03-05 01:39:59.955 PULSE    pos= 0 sym=1 width=448ms t=191.177s
+2026-03-05 01:40:01.176 PULSE    pos= 0 sym=M width=665ms t=192.181s
+2026-03-05 01:40:01.692 SIGNAL   power=-113.9dBm snr=12.9dB
+2026-03-05 01:40:01.762 PULSE    pos= 0 sym=0 width=180ms t=193.186s
+2026-03-05 01:40:03.114 PULSE    pos= 0 sym=M width=773ms t=194.086s
+2026-03-05 01:40:03.115 SYNC     Found 1 of 2 consecutive markers (773ms)
+2026-03-05 01:40:03.627 PULSE    pos= 0 sym=0 width=251ms t=195.057s
+2026-03-05 01:40:03.702 SIGNAL   power=-115.1dBm snr=11.5dB
+2026-03-05 01:40:05.373 GAPFILL  pos= 0 sym=? (missed pulse)
+2026-03-05 01:40:05.373 PULSE    pos= 0 sym=0 width=167ms t=196.960s
+2026-03-05 01:40:05.704 SIGNAL   power=-113.8dBm snr=13.0dB
+2026-03-05 01:40:06.291 PULSE    pos= 0 sym=0 width=92ms t=197.904s
+2026-03-05 01:40:07.659 PULSE    pos= 0 sym=M width=614ms t=198.804s
+2026-03-05 01:40:07.707 SIGNAL   power=-109.7dBm snr=17.0dB
+2026-03-05 01:40:08.437 PULSE    pos= 0 sym=1 width=503ms t=199.773s
+2026-03-05 01:40:09.710 SIGNAL   power=-115.2dBm snr=11.6dB
+2026-03-05 01:40:09.849 PULSE    pos= 0 sym=M width=895ms t=200.673s
+2026-03-05 01:40:09.849 SYNC     Found 1 of 2 consecutive markers (895ms)
+2026-03-05 01:40:10.681 PULSE    pos= 0 sym=1 width=488ms t=201.986s
+2026-03-05 01:40:11.367 PULSE    pos= 0 sym=0 width=126ms t=203.016s
+2026-03-05 01:40:11.713 SIGNAL   power=-107.7dBm snr=18.8dB
+2026-03-05 01:40:12.988 PULSE    pos= 0 sym=M width=862ms t=203.916s
+2026-03-05 01:40:12.988 SYNC     Found 1 of 2 consecutive markers (862ms)
+2026-03-05 01:40:13.370 PULSE    pos= 0 sym=0 width=306ms t=204.911s
+2026-03-05 01:40:13.719 SIGNAL   power=-112.2dBm snr=14.3dB
+2026-03-05 01:40:14.141 PULSE    pos= 0 sym=0 width=181ms t=205.821s
+2026-03-05 01:40:14.952 PULSE    pos= 0 sym=0 width=136ms t=206.721s
+2026-03-05 01:40:15.727 SIGNAL   power=-114.8dBm snr=11.8dB
+2026-03-05 01:40:16.115 PULSE    pos= 0 sym=0 width=181ms t=207.759s
+2026-03-05 01:40:17.729 SIGNAL   power=-111.6dBm snr=15.0dB
+2026-03-05 01:40:18.889 GAPFILL  pos= 0 sym=? (missed pulse)
+2026-03-05 01:40:18.889 PULSE    pos= 0 sym=1 width=543ms t=210.191s
+2026-03-05 01:40:19.650 PULSE    pos= 0 sym=1 width=448ms t=211.148s
+2026-03-05 01:40:19.732 SIGNAL   power=-105.9dBm snr=20.5dB
+2026-03-05 01:40:20.727 PULSE    pos= 0 sym=1 width=502ms t=212.185s
+2026-03-05 01:40:21.624 PULSE    pos= 0 sym=1 width=479ms t=213.085s
+2026-03-05 01:40:21.735 SIGNAL   power=-106.3dBm snr=20.4dB
+2026-03-05 01:40:22.498 PULSE    pos= 0 sym=1 width=438ms t=214.093s
+2026-03-05 01:40:23.399 PULSE    pos= 0 sym=1 width=372ms t=215.040s
+2026-03-05 01:40:23.738 SIGNAL   power=-108.7dBm snr=19.1dB
+2026-03-05 01:40:24.410 PULSE    pos= 0 sym=1 width=461ms t=215.957s
+2026-03-05 01:40:25.339 PULSE    pos= 0 sym=0 width=316ms t=217.080s
+2026-03-05 01:40:25.741 SIGNAL   power=-107.9dBm snr=18.9dB
+2026-03-05 01:40:26.241 PULSE    pos= 0 sym=1 width=350ms t=217.980s
+2026-03-05 01:40:27.205 PULSE    pos= 0 sym=0 width=264ms t=219.051s
+2026-03-05 01:40:27.744 SIGNAL   power=-117.2dBm snr=9.4dB
+2026-03-05 01:40:28.496 PULSE    pos= 0 sym=M width=587ms t=220.036s
+2026-03-05 01:40:29.398 PULSE    pos= 0 sym=1 width=511ms t=220.999s
+2026-03-05 01:40:29.747 SIGNAL   power=-105.5dBm snr=21.8dB
+2026-03-05 01:40:30.435 PULSE    pos= 0 sym=M width=694ms t=221.899s
+2026-03-05 01:40:30.435 SYNC     Found 1 of 2 consecutive markers (694ms)
+2026-03-05 01:40:31.338 PULSE    pos= 0 sym=M width=693ms t=222.805s
+2026-03-05 01:40:31.339 SYNC     Frame sync acquired
+2026-03-05 01:40:31.755 SIGNAL   power=-119.5dBm snr=7.4dB
+2026-03-05 01:40:32.340 PULSE    pos= 1 sym=M width=703ms t=223.757s
+2026-03-05 01:40:33.222 PULSE    pos= 2 sym=M width=665ms t=224.657s
+2026-03-05 01:40:33.758 SIGNAL   power=-112.9dBm snr=13.8dB
+2026-03-05 01:40:34.107 PULSE    pos= 3 sym=M width=609ms t=225.633s
+2026-03-05 01:40:35.014 PULSE    pos= 4 sym=M width=660ms t=226.541s
+2026-03-05 01:40:35.760 SIGNAL   power=-105.7dBm snr=21.1dB
+2026-03-05 01:40:35.957 PULSE    pos= 5 sym=M width=681ms t=227.522s
+2026-03-05 01:40:36.862 PULSE    pos= 6 sym=1 width=552ms t=228.528s
+2026-03-05 01:40:37.763 SIGNAL   power=-116.9dBm snr=10.1dB
+2026-03-05 01:40:37.849 PULSE    pos= 7 sym=M width=590ms t=229.428s
+2026-03-05 01:40:38.620 PULSE    pos= 8 sym=M width=593ms t=230.328s
+2026-03-05 01:40:39.619 PULSE    pos= 9 sym=1 width=576ms t=231.301s
+2026-03-05 01:40:39.620 ERROR    Frame error: Sync validation failed: position 9 is '1', not marker. Resyncing.
+2026-03-05 01:40:39.620 SYNC     Sync lost. Resyncing...
+2026-03-05 01:40:39.767 SIGNAL   power=-116.9dBm snr=10.0dB
+2026-03-05 01:40:40.522 PULSE    pos= 0 sym=1 width=495ms t=232.299s
+2026-03-05 01:40:41.462 PULSE    pos= 0 sym=1 width=464ms t=233.372s
+2026-03-05 01:40:41.770 SIGNAL   power=-110.7dBm snr=16.2dB
+2026-03-05 01:40:42.364 PULSE    pos= 0 sym=0 width=240ms t=234.463s
+2026-03-05 01:40:43.462 PULSE    pos= 0 sym=0 width=325ms t=235.405s
+2026-03-05 01:40:43.772 SIGNAL   power=-104.9dBm snr=22.1dB
+2026-03-05 01:40:44.306 PULSE    pos= 0 sym=0 width=199ms t=236.461s
+2026-03-05 01:40:45.404 PULSE    pos= 0 sym=1 width=412ms t=237.389s
+2026-03-05 01:40:45.776 SIGNAL   power=-104.8dBm snr=21.8dB
+2026-03-05 01:40:46.362 PULSE    pos= 0 sym=1 width=492ms t=238.311s
+2026-03-05 01:40:47.361 PULSE    pos= 0 sym=1 width=441ms t=239.272s
+2026-03-05 01:40:47.779 SIGNAL   power=-105.7dBm snr=21.2dB
+2026-03-05 01:40:48.370 PULSE    pos= 0 sym=1 width=492ms t=240.308s
+2026-03-05 01:40:49.219 PULSE    pos= 0 sym=1 width=409ms t=241.285s
+2026-03-05 01:40:49.793 SIGNAL   power=-104.5dBm snr=22.2dB
+2026-03-05 01:40:50.238 PULSE    pos= 0 sym=1 width=491ms t=242.185s
+2026-03-05 01:40:51.142 PULSE    pos= 0 sym=1 width=485ms t=243.131s
+2026-03-05 01:40:51.796 SIGNAL   power=-103.4dBm snr=23.3dB
+2026-03-05 01:40:52.172 PULSE    pos= 0 sym=0 width=327ms t=244.314s
+2026-03-05 01:40:53.176 PULSE    pos= 0 sym=1 width=349ms t=245.288s
+2026-03-05 01:40:53.799 SIGNAL   power=-104.2dBm snr=22.5dB
+2026-03-05 01:40:54.175 PULSE    pos= 0 sym=1 width=415ms t=246.270s
+2026-03-05 01:40:55.328 PULSE    pos= 0 sym=M width=599ms t=247.212s
+2026-03-05 01:40:55.802 SIGNAL   power=-109.6dBm snr=17.5dB
+2026-03-05 01:40:56.431 PULSE    pos= 0 sym=M width=804ms t=248.165s
+2026-03-05 01:40:56.431 SYNC     Found 1 of 2 consecutive markers (804ms)
+2026-03-05 01:40:57.235 PULSE    pos= 0 sym=1 width=575ms t=249.139s
+2026-03-05 01:40:57.805 SIGNAL   power=-107.2dBm snr=20.0dB
+2026-03-05 01:40:58.185 PULSE    pos= 0 sym=M width=632ms t=250.181s
+2026-03-05 01:40:59.081 PULSE    pos= 0 sym=M width=586ms t=251.108s
+2026-03-05 01:40:59.808 SIGNAL   power=-112.5dBm snr=14.1dB
+2026-03-05 01:41:00.076 PULSE    pos= 0 sym=1 width=573ms t=252.066s
+2026-03-05 01:41:00.942 PULSE    pos= 0 sym=1 width=483ms t=253.111s
+2026-03-05 01:41:01.812 SIGNAL   power=-112.0dBm snr=14.4dB
+2026-03-05 01:41:02.022 PULSE    pos= 0 sym=M width=663ms t=254.011s
+2026-03-05 01:41:02.983 PULSE    pos= 0 sym=M width=593ms t=255.091s
+2026-03-05 01:41:03.815 SIGNAL   power=-119.1dBm snr=7.6dB
+2026-03-05 01:41:03.880 PULSE    pos= 0 sym=1 width=512ms t=256.055s
+2026-03-05 01:41:04.883 PULSE    pos= 0 sym=M width=627ms t=256.955s
+2026-03-05 01:41:05.819 PULSE    pos= 0 sym=M width=716ms t=257.855s
+2026-03-05 01:41:05.819 SYNC     Found 1 of 2 consecutive markers (716ms)
+2026-03-05 01:41:05.825 SIGNAL   power=-109.9dBm snr=16.5dB
+2026-03-05 01:41:06.245 PULSE    pos= 0 sym=0 width=258ms t=258.755s
+2026-03-05 01:41:07.829 SIGNAL   power=-111.1dBm snr=15.8dB
+2026-03-05 01:41:07.940 PULSE    pos= 0 sym=? width=1101ms t=259.676s
+2026-03-05 01:41:08.978 PULSE    pos= 0 sym=M width=889ms t=260.861s
+2026-03-05 01:41:08.978 SYNC     Found 1 of 2 consecutive markers (889ms)
+2026-03-05 01:41:09.832 SIGNAL   power=-109.2dBm snr=17.3dB
+2026-03-05 01:41:09.881 PULSE    pos= 0 sym=M width=634ms t=261.983s
+2026-03-05 01:41:10.880 PULSE    pos= 0 sym=M width=722ms t=262.936s
+2026-03-05 01:41:10.880 SYNC     Found 1 of 2 consecutive markers (722ms)
+2026-03-05 01:41:11.724 PULSE    pos= 0 sym=M width=618ms t=263.955s
+2026-03-05 01:41:11.836 SIGNAL   power=-115.2dBm snr=11.5dB
+2026-03-05 01:41:12.241 PULSE    pos= 0 sym=0 width=191ms t=264.886s
+2026-03-05 01:41:13.724 PULSE    pos= 0 sym=M width=762ms t=265.786s
+2026-03-05 01:41:13.724 SYNC     Found 1 of 2 consecutive markers (762ms)
+2026-03-05 01:41:13.849 SIGNAL   power=-112.4dBm snr=14.7dB
+2026-03-05 01:41:14.494 PULSE    pos= 0 sym=1 width=542ms t=266.811s
+2026-03-05 01:41:14.976 PULSE    pos= 0 sym=0 width=125ms t=267.711s
+2026-03-05 01:41:15.852 SIGNAL   power=-110.4dBm snr=16.7dB
+2026-03-05 01:41:16.649 PULSE    pos= 0 sym=M width=673ms t=268.885s
+2026-03-05 01:41:17.653 PULSE    pos= 0 sym=1 width=452ms t=270.069s
+2026-03-05 01:41:17.854 SIGNAL   power=-107.5dBm snr=19.5dB
+2026-03-05 01:41:18.557 PULSE    pos= 0 sym=1 width=484ms t=270.969s
+2026-03-05 01:41:19.596 PULSE    pos= 0 sym=M width=621ms t=271.955s
+2026-03-05 01:41:19.858 SIGNAL   power=-105.8dBm snr=20.7dB
+2026-03-05 01:41:20.397 PULSE    pos= 0 sym=1 width=488ms t=272.899s
+2026-03-05 01:41:21.398 PULSE    pos= 0 sym=1 width=532ms t=273.822s
+2026-03-05 01:41:21.861 SIGNAL   power=-107.2dBm snr=19.6dB
+2026-03-05 01:41:22.275 PULSE    pos= 0 sym=1 width=415ms t=274.879s
+2026-03-05 01:41:23.163 PULSE    pos= 0 sym=1 width=436ms t=275.779s
+2026-03-05 01:41:23.864 SIGNAL   power=-108.3dBm snr=18.7dB
+2026-03-05 01:41:24.340 PULSE    pos= 0 sym=1 width=517ms t=276.838s
+2026-03-05 01:41:25.202 PULSE    pos= 0 sym=1 width=495ms t=277.738s
+2026-03-05 01:41:25.868 SIGNAL   power=-107.0dBm snr=19.8dB
+2026-03-05 01:41:26.104 PULSE    pos= 0 sym=1 width=518ms t=278.638s
+2026-03-05 01:41:27.203 PULSE    pos= 0 sym=1 width=434ms t=279.792s
+2026-03-05 01:41:27.871 SIGNAL   power=-107.8dBm snr=19.1dB
+2026-03-05 01:41:28.363 PULSE    pos= 0 sym=0 width=121ms t=281.249s
+2026-03-05 01:41:29.873 SIGNAL   power=-118.0dBm snr=8.7dB
+2026-03-05 01:41:30.258 GAPFILL  pos= 0 sym=? (missed pulse)
+2026-03-05 01:41:30.258 PULSE    pos= 0 sym=1 width=542ms t=282.780s
+2026-03-05 01:41:31.104 PULSE    pos= 0 sym=1 width=540ms t=283.694s
+2026-03-05 01:41:31.877 SIGNAL   power=-122.7dBm snr=4.2dB
+2026-03-05 01:41:32.106 PULSE    pos= 0 sym=M width=583ms t=284.701s
+2026-03-05 01:41:33.066 PULSE    pos= 0 sym=M width=603ms t=285.601s
+2026-03-05 01:41:33.878 SIGNAL   power=-110.1dBm snr=16.7dB
+2026-03-05 01:41:34.044 PULSE    pos= 0 sym=1 width=476ms t=286.769s
+2026-03-05 01:41:34.254 STATS    Session ended. Duration: 0:04:43 | Frames: 2 decoded, 2 errors | Success rate: 0.0%
